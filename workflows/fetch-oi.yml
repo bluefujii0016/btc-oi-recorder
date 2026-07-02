@@ -1,0 +1,35 @@
+name: Fetch BTC OI Data
+
+on:
+  schedule:
+    # 4時間おき（毎時5分にオフセット：正時はGitHub側が混雑し遅延しやすいため）
+    # 注意：cronはUTC基準。また数分〜数十分の実行遅延が起こることがあるが、
+    # 記録には正確なタイムスタンプが付き、変化率計算は実経過時間ベースなので実害なし。
+    - cron: '5 */4 * * *'
+  # 手動実行（Actionsタブの「Run workflow」ボタン）— セットアップ後の動作確認用
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch Binance data and append
+        run: python3 scripts/fetch_oi.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name  "oi-recorder-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/oi_history.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "record: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
