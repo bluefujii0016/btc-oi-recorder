@@ -30,8 +30,8 @@ API_FUNDING = f"https://api.coinalyze.net/v1/funding-rate?symbols={SYMBOL}"
 API_PRICE   = "https://api.coinbase.com/v2/prices/BTC-USD/spot"
 
 DATA_FILE   = Path(__file__).resolve().parent.parent / "data" / "oi_history.json"
-MAX_ENTRIES = 200          # 保持する最大件数（約33日分 @ 4時間おき）
-MIN_INTERVAL_MIN = 30      # 直前の記録からこの分数以内なら重複とみなしてスキップ
+MAX_ENTRIES = 720          # 1時間おきで約30日分
+MIN_INTERVAL_MIN = 20      # 1時間間隔に合わせて短縮
 
 
 def get_json(url: str, api_key: str | None = None):
