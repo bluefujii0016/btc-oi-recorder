@@ -30,8 +30,8 @@ API_FUNDING = f"https://api.coinalyze.net/v1/funding-rate?symbols={SYMBOL}"
 API_PRICE   = "https://api.coinbase.com/v2/prices/BTC-USD/spot"
 
 DATA_FILE   = Path(__file__).resolve().parent.parent / "data" / "oi_history.json"
-MAX_ENTRIES = 720          # 1時間おきで約30日分
-MIN_INTERVAL_MIN = 20      # 1時間間隔に合わせて短縮
+MAX_ENTRIES = 200          # 保持する最大件数（約33日分 @ 4時間おき）
+MIN_INTERVAL_MIN = 30      # 直前の記録からこの分数以内なら重複とみなしてスキップ
 
 
 def get_json(url: str, api_key: str | None = None):
@@ -64,10 +64,10 @@ def main() -> int:
     oi_usd = oi_raw if oi_raw >= 1e7 else oi_raw * price_f
     oi_b   = oi_usd / 1e9
 
-    # Funding: %表記想定（例 0.0100）。万一小数表記（0.000100）で返ってきた
-    # 場合の保険として、絶対値が0.005未満なら100倍して%に揃える
-    fr_raw = float(funding_res[0]["value"])
-    funding_pct = fr_raw * 100.0 if abs(fr_raw) < 0.005 else fr_raw
+    # Funding: Coinalyzeは%表記で返す（例 0.0100 = 0.0100%）。そのまま使用する。
+    # 注意: 「絶対値が小さければ小数表記とみなして100倍する」旧ヒューリスティックは
+    # 実Fundingが0.005%未満に低下した際に誤変換するバグがあったため撤廃（2026-07-06）
+    funding_pct = float(funding_res[0]["value"])
 
     now = datetime.now(timezone.utc)
     entry = {
@@ -78,8 +78,8 @@ def main() -> int:
         "source":  "coinalyze-binance-auto",
     }
 
-    # 検証用に生値もログに出す（初回運用時のCoinGlassとの突き合わせ用）
-    print(f"raw: oi_value={oi_raw} funding_value={fr_raw} price={price_f}")
+    # 検証用に生値もログに出す（異常時の検証用）
+    print(f"raw: oi_value={oi_raw} funding_value={float(funding_res[0]['value'])} price={price_f}")
 
     # ── 読み込み・重複ガード ──────────────────────────────
     history = []
@@ -88,6 +88,25 @@ def main() -> int:
             history = json.loads(DATA_FILE.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             print("WARN: data file was corrupt; starting fresh", file=sys.stderr)
+
+    # ── 異常値検知（記録は行い、警告のみ出す） ────────────
+    # データソース異常やスクリプトの変換ミスを早期発見するための番犬。
+    # 実際の急変（清算イベント等）もあり得るため、記録自体は止めない。
+    if history:
+        prev = history[0]
+        try:
+            prev_oi = float(prev["oi"])
+            if prev_oi > 0 and abs(oi_b - prev_oi) / prev_oi > 0.30:
+                print(f"WARNING: OIが前回記録から30%超変動 "
+                      f"({prev['oi']}B -> {oi_b:.2f}B)。実イベントかデータ異常か要確認",
+                      file=sys.stderr)
+            prev_fr = float(prev["funding"])
+            if abs(funding_pct) > 0.05 and abs(prev_fr) > 0 and abs(funding_pct / prev_fr) > 10:
+                print(f"WARNING: Fundingが前回記録から10倍超変動 "
+                      f"({prev['funding']}% -> {funding_pct:.4f}%)。実イベントかデータ異常か要確認",
+                      file=sys.stderr)
+        except (ValueError, KeyError, ZeroDivisionError):
+            pass
 
     if history:
         last_ts = datetime.fromisoformat(history[0]["ts"].replace("Z", "+00:00"))
