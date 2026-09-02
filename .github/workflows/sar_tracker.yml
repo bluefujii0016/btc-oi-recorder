@@ -1,0 +1,41 @@
+name: SAR Tracker (15m)
+
+on:
+  schedule:
+    # GitHub Actionsのcronは遅延することがあるため、
+    # 既存のOI Recorderと同様にcron-job.orgからのworkflow_dispatchを
+    # 補助トリガーとして併用することを推奨
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  track-sar:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sar-tracker
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run SAR tracker
+        env:
+          COINALYZE_API_KEY: ${{ secrets.COINALYZE_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python scripts/sar_tracker.py
+
+      - name: Commit updated state and log
+        run: |
+          git config user.name "sar-tracker-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/sar_state.json data/sar_log.jsonl
+          git diff --cached --quiet || git commit -m "sar_tracker: update state/log [skip ci]"
+          git push
