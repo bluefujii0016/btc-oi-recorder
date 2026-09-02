@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
 """
-sar_tracker.py
+sar_tracker.py (v2)
 
 Coinalyze の /ohlcv-history から BTCUSDT_PERP.A の15分足OHLCVを取得し、
-Wilder式 Parabolic SAR (AF初期値0.02 / 刻み0.02 / 上限0.20) を
-決定論的に再計算する。
+Wilder式 Parabolic SAR (AF初期値0.02 / 刻み0.02 / 上限0.20) を計算する。
 
-転換後1点目を検知したら:
+v1からの変更点(重要):
+  v1は毎回「直近3日分をゼロから再計算」していたため、取得ウィンドウが
+  15分ずつスライドするたびに計算の起点(トレンド初期仮定)が変わり、
+  転換点ちょうどの判定が実行のたびにブレる不具合があった
+  (前回は"継続"と判定した足を、今回は"転換点"と判定するなど)。
+
+  v2では sar_state.json に SAR計算の状態そのもの
+  (sar値・EP・AF・トレンド方向・直近2本の高安値) を保存し、
+  次回実行時はその続きから1本ずつ計算を進める「継続計算」方式に変更。
+  これにより過去に確定した足の判定が実行のたびに変わることがなくなる。
+
+  初回実行時のみ、直近3日分をまとめて計算して状態を「起動」させる
+  (bootstrap)。2回目以降は前回の状態 + 新規に確定した足だけを処理する。
+
+転換バーを新規検知したら:
   1. Discord Webhookに通知を送信
   2. sar_log.jsonl に1レコード追記(BTC_pattern_observer等での後日検証用)
-  3. sar_state.json を更新(次回実行時の重複通知防止)
+  3. sar_state.json を更新(次回実行時の重複通知防止・継続計算用)
 
 既存のOI Recorderパイプラインと同様、Binance BTCUSDT Perpのみを対象とし、
 クロス取引所の混在は行わない。
@@ -29,10 +42,9 @@ import requests
 COINALYZE_API_KEY = os.environ.get("COINALYZE_API_KEY", "")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-SYMBOL = "BTCUSDT_PERP.A"          # Binance BTCUSDT Perp (既存パイプラインと同一スコープ)
+SYMBOL = "BTCUSDT_PERP.A"           # Binance BTCUSDT Perp (既存パイプラインと同一スコープ)
 INTERVAL = "15min"                  # Coinalyze側の interval 表記
-LOOKBACK_SECONDS = 60 * 60 * 24 * 3  # 直近3日分(15分足で約288本)を取得してSARを再計算
-                                     # トレンドが長期化している場合は要調整
+BOOTSTRAP_LOOKBACK_SECONDS = 60 * 60 * 24 * 3  # 初回起動時のみ: 直近3日分を取得して状態を作る
 
 AF_START = 0.02
 AF_STEP = 0.02
@@ -47,12 +59,15 @@ OHLCV_URL = "https://api.coinalyze.net/v1/ohlcv-history"
 # ---------------------------------------------------------------------------
 # データ取得
 # ---------------------------------------------------------------------------
-def fetch_ohlcv():
+def fetch_ohlcv(from_ts=None):
     now = int(time.time())
+    if from_ts is None:
+        from_ts = now - BOOTSTRAP_LOOKBACK_SECONDS
+
     params = {
         "symbols": SYMBOL,
         "interval": INTERVAL,
-        "from": now - LOOKBACK_SECONDS,
+        "from": from_ts,
         "to": now,
     }
     headers = {"api_key": COINALYZE_API_KEY}
@@ -64,19 +79,17 @@ def fetch_ohlcv():
         raise RuntimeError(f"Coinalyzeレスポンス形式が想定と異なります: {data}")
 
     bars = data[0]["history"]
-    # 念のため時刻昇順を保証
     bars = sorted(bars, key=lambda b: b["t"])
     return bars
 
 
 # ---------------------------------------------------------------------------
-# Wilder式 Parabolic SAR 計算
+# Wilder式 Parabolic SAR: 初回起動用(ゼロから系列全体を計算)
 # ---------------------------------------------------------------------------
-def compute_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
+def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
     """
-    bars: [{'t':unix_ts, 'o':..,'h':..,'l':..,'c':..}, ...] 昇順
-    戻り値: 各バーに対応する dict のリスト
-      {t, close, sar, trend('up'/'down'), af, ep, reversed(bool)}
+    初回実行専用。bars全体からSAR系列を計算し、
+    最終バー時点の「継続計算に必要な状態」を返す。
     """
     n = len(bars)
     if n < 3:
@@ -87,7 +100,6 @@ def compute_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
     close = [b["c"] for b in bars]
     ts = [b["t"] for b in bars]
 
-    # 初期トレンドは最初の2本の close 比較で仮決め
     bull = close[1] >= close[0]
     af = af_start
     if bull:
@@ -97,27 +109,19 @@ def compute_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         sar = high[0]
         ep = low[1]
 
-    results = []
-    results.append({
-        "t": ts[0], "close": close[0], "sar": sar,
-        "trend": "up" if bull else "down", "af": af, "ep": ep, "reversed": False
-    })
+    dots = 1  # 系列先頭を仮の1点目として数える(起動時のみの近似値)
 
     for i in range(1, n):
         prev_sar = sar
         reversed_flag = False
-
-        # 通常のSAR前進計算
         sar = prev_sar + af * (ep - prev_sar)
 
         if bull:
-            # 上昇トレンド: SARは安値を上回ってはいけない(直近2本の安値でクリップ)
             sar = min(sar, low[i - 1], low[i - 2] if i >= 2 else low[i - 1])
             if low[i] < sar:
-                # 反転: 下降トレンドへ
                 bull = False
                 reversed_flag = True
-                sar = ep          # 直前トレンドのEPを新SARに
+                sar = ep
                 ep = low[i]
                 af = af_start
             else:
@@ -125,10 +129,8 @@ def compute_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
                     ep = high[i]
                     af = min(af + af_step, af_max)
         else:
-            # 下降トレンド: SARは高値を下回ってはいけない(直近2本の高値でクリップ)
             sar = max(sar, high[i - 1], high[i - 2] if i >= 2 else high[i - 1])
             if high[i] > sar:
-                # 反転: 上昇トレンドへ
                 bull = True
                 reversed_flag = True
                 sar = ep
@@ -139,33 +141,116 @@ def compute_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
                     ep = low[i]
                     af = min(af + af_step, af_max)
 
-        results.append({
-            "t": ts[i], "close": close[i], "sar": sar,
-            "trend": "up" if bull else "down", "af": af, "ep": ep,
-            "reversed": reversed_flag
-        })
+        dots = 1 if reversed_flag else dots + 1
 
-    return results
+    prev1 = {"t": ts[-1], "h": high[-1], "l": low[-1]}
+    prev2 = {"t": ts[-2], "h": high[-2], "l": low[-2]}
 
+    state = {
+        "bull": bull,
+        "af": af,
+        "ep": ep,
+        "sar": sar,
+        "prev1": prev1,
+        "prev2": prev2,
+        "dots_since_flip": dots,
+        "last_processed_t": ts[-1],
+        "last_notified_flip_t": None,
+    }
 
-def dots_since_flip(results):
-    """末尾バーが直近の転換から何点目かを数える(転換した足自体が1点目)"""
-    count = 0
-    for r in reversed(results):
-        count += 1
-        if r["reversed"]:
-            return count
-    return count  # 系列内に転換が一度もない場合
+    last_record = {
+        "t": ts[-1],
+        "close": close[-1],
+        "sar": sar,
+        "af": af,
+        "ep": ep,
+        "trend": "up" if bull else "down",
+        "reversed": False,  # 起動直後は転換判定を行わない(誤通知防止)
+        "dots_since_flip": dots,
+    }
+
+    return state, last_record
 
 
 # ---------------------------------------------------------------------------
-# 状態管理(重複通知防止)
+# Wilder式 Parabolic SAR: 2回目以降(継続計算)
+# ---------------------------------------------------------------------------
+def step_psar(state, bar, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
+    """
+    永続化された状態(state)を1本分だけ前進させる。
+    bar: {'t':.., 'h':.., 'l':.., 'c':..}
+    """
+    bull = state["bull"]
+    af = state["af"]
+    ep = state["ep"]
+    prev_sar = state["sar"]
+    prev1 = state["prev1"]
+    prev2 = state["prev2"]
+
+    reversed_flag = False
+    sar = prev_sar + af * (ep - prev_sar)
+
+    if bull:
+        sar = min(sar, prev1["l"], prev2["l"])
+        if bar["l"] < sar:
+            bull = False
+            reversed_flag = True
+            sar = ep
+            ep = bar["l"]
+            af = af_start
+        else:
+            if bar["h"] > ep:
+                ep = bar["h"]
+                af = min(af + af_step, af_max)
+    else:
+        sar = max(sar, prev1["h"], prev2["h"])
+        if bar["h"] > sar:
+            bull = True
+            reversed_flag = True
+            sar = ep
+            ep = bar["h"]
+            af = af_start
+        else:
+            if bar["l"] < ep:
+                ep = bar["l"]
+                af = min(af + af_step, af_max)
+
+    new_dots = 1 if reversed_flag else state["dots_since_flip"] + 1
+
+    new_state = {
+        "bull": bull,
+        "af": af,
+        "ep": ep,
+        "sar": sar,
+        "prev1": {"t": bar["t"], "h": bar["h"], "l": bar["l"]},
+        "prev2": prev1,
+        "dots_since_flip": new_dots,
+        "last_processed_t": bar["t"],
+        "last_notified_flip_t": state.get("last_notified_flip_t"),
+    }
+
+    record = {
+        "t": bar["t"],
+        "close": bar["c"],
+        "sar": sar,
+        "af": af,
+        "ep": ep,
+        "trend": "up" if bull else "down",
+        "reversed": reversed_flag,
+        "dots_since_flip": new_dots,
+    }
+
+    return new_state, record
+
+
+# ---------------------------------------------------------------------------
+# 状態管理
 # ---------------------------------------------------------------------------
 def load_state():
     if os.path.exists(STATE_PATH):
         with open(STATE_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {"last_notified_flip_t": None, "last_processed_t": None}
+    return None
 
 
 def save_state(state):
@@ -175,7 +260,7 @@ def save_state(state):
 
 
 # ---------------------------------------------------------------------------
-# ログ蓄積(後日のパターン検証用)
+# ログ蓄積
 # ---------------------------------------------------------------------------
 def append_log(record):
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
@@ -201,7 +286,7 @@ def notify_discord(record):
         f"価格: {record['close']:.1f}\n"
         f"SAR値: {record['sar']:.1f}\n"
         f"AF: {record['af']:.2f}\n"
-        f"✅ Coinalyze OHLCVから決定論的に計算(Wilder式 0.02/0.02/0.20)"
+        f"✅ Coinalyze OHLCVから継続計算(Wilder式 0.02/0.02/0.20)"
     )
 
     resp = requests.post(DISCORD_WEBHOOK_URL, json={"content": content}, timeout=15)
@@ -216,18 +301,37 @@ def main():
         print("COINALYZE_API_KEY が未設定です", file=sys.stderr)
         sys.exit(1)
 
-    bars = fetch_ohlcv()
-    results = compute_psar(bars)
-
     state = load_state()
-    last_processed_t = state.get("last_processed_t")
 
-    # 前回実行以降に新しく確定した足だけを対象にする
-    # (last_processed_t が None なら初回実行なので最新1本のみ扱う)
-    if last_processed_t is None:
-        new_bars = [(len(results) - 1, results[-1])]
-    else:
-        new_bars = [(i, r) for i, r in enumerate(results) if r["t"] > last_processed_t]
+    # -------------------------------------------------------------
+    # 初回起動(state.jsonがまだ存在しない、または旧形式の場合)
+    # -------------------------------------------------------------
+    if state is None or "prev1" not in state:
+        bars = fetch_ohlcv(from_ts=None)
+        state, last_record = bootstrap_psar(bars)
+
+        record = {
+            "t": last_record["t"],
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "interval": INTERVAL,
+            "close": last_record["close"],
+            "sar": last_record["sar"],
+            "af": last_record["af"],
+            "ep": last_record["ep"],
+            "trend": last_record["trend"],
+            "dots_since_flip": last_record["dots_since_flip"],
+        }
+        append_log(record)
+        save_state(state)
+        print("初回起動(bootstrap)完了。次回実行から継続計算に入ります。")
+        return
+
+    # -------------------------------------------------------------
+    # 2回目以降: 前回処理済み時刻より後の足だけを取得して継続計算
+    # -------------------------------------------------------------
+    last_processed_t = state["last_processed_t"]
+    bars = fetch_ohlcv(from_ts=last_processed_t)
+    new_bars = [b for b in bars if b["t"] > last_processed_t]
 
     if not new_bars:
         print("新規バーなし(前回実行から進捗なし)")
@@ -235,33 +339,20 @@ def main():
 
     notified_any = False
 
-    for idx, bar in new_bars:
-        record = {
-            "t": bar["t"],
-            "recorded_at": datetime.now(timezone.utc).isoformat(),
-            "interval": INTERVAL,
-            "close": bar["close"],
-            "sar": bar["sar"],
-            "af": bar["af"],
-            "ep": bar["ep"],
-            "trend": bar["trend"],
-            "dots_since_flip": dots_since_flip(results[: idx + 1]),
-        }
+    for bar in new_bars:
+        state, record = step_psar(state, bar)
+        record["recorded_at"] = datetime.now(timezone.utc).isoformat()
+        record["interval"] = INTERVAL
+        append_log({k: v for k, v in record.items() if k != "reversed"})
 
-        append_log(record)
-
-        # 転換バー かつ 未通知の場合のみ通知
-        is_new_flip = bar["reversed"] and (state.get("last_notified_flip_t") != bar["t"])
+        is_new_flip = record["reversed"] and (state.get("last_notified_flip_t") != bar["t"])
         if is_new_flip:
             notify_discord(record)
             state["last_notified_flip_t"] = bar["t"]
             notified_any = True
             print(f"=> 転換1点目を検知し、Discordに通知しました (t={bar['t']})", file=sys.stderr)
 
-    # 処理済みの最新バー時刻を必ず更新(実行の抜けを次回検知するための基準点)
-    state["last_processed_t"] = results[-1]["t"]
     save_state(state)
-
     print(f"新規バー{len(new_bars)}件を処理しました" + ("(通知あり)" if notified_any else "(通知なし)"))
 
 
