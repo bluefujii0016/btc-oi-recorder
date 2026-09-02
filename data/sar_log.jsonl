@@ -33,3 +33,4 @@
 {"t": 1788351300, "recorded_at": "2026-09-02T12:15:23.041552+00:00", "interval": "15min", "close": 76789, "sar": 76191.02335999999, "af": 0.04, "ep": 76814, "trend": "up", "dots_since_flip": 3}
 {"t": 1788352200, "recorded_at": "2026-09-02T12:30:30.382184+00:00", "interval": "15min", "close": 76957.3, "sar": 76241.31395839999, "af": 0.06, "ep": 77029.2, "trend": "up", "dots_since_flip": 4}
 {"t": 1788352200, "recorded_at": "2026-09-02T12:34:06.802913+00:00", "interval": "15min", "close": 76874.2, "sar": 76241.31395839999, "af": 0.06, "ep": 77029.2, "trend": "up", "dots_since_flip": 4}
+{"t": 1788353100, "close": 76763.2, "sar": 76288.58712089599, "af": 0.06, "ep": 77029.2, "trend": "up", "dots_since_flip": 5, "recorded_at": "2026-09-02T12:45:23.617196+00:00", "interval": "15min"}
