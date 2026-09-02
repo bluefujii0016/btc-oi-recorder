@@ -38,6 +38,6 @@ jobs:
         run: |
           git config user.name "sar-tracker-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/sar_state.json data/sar_log.jsonl
+          git add data/
           git diff --cached --quiet || git commit -m "sar_tracker: update state/log [skip ci]"
           git push
