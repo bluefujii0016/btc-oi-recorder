@@ -11,6 +11,8 @@ on:
 jobs:
   track-sar:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     concurrency:
       group: sar-tracker
       cancel-in-progress: false
