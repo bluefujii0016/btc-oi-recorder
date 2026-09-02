@@ -74,3 +74,4 @@
 {"t": 1788387300, "close": 76985, "sar": 77546.7, "af": 0.02, "ep": 76983, "trend": "down", "dots_since_flip": 1, "recorded_at": "2026-09-02T22:30:28.340791+00:00", "interval": "15min"}
 {"t": 1788388200, "close": 76994.8, "sar": 77535.42599999999, "af": 0.02, "ep": 76983, "trend": "down", "dots_since_flip": 2, "recorded_at": "2026-09-02T22:30:28.547379+00:00", "interval": "15min"}
 {"t": 1788389100, "close": 77032.9, "sar": 77524.37748, "af": 0.02, "ep": 76983, "trend": "down", "dots_since_flip": 3, "recorded_at": "2026-09-02T22:45:22.936843+00:00", "interval": "15min"}
+{"t": 1788390000, "close": 77004.4, "sar": 77513.5499304, "af": 0.02, "ep": 76983, "trend": "down", "dots_since_flip": 4, "recorded_at": "2026-09-02T23:00:36.351269+00:00", "interval": "15min"}
