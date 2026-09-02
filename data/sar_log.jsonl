@@ -18,3 +18,4 @@
 {"t": 1788338700, "recorded_at": "2026-09-02T08:45:26.643532+00:00", "interval": "15min", "close": 76947.4, "sar": 77722.72064, "af": 0.06, "ep": 76904.2, "trend": "down", "dots_since_flip": 3}
 {"t": 1788339600, "recorded_at": "2026-09-02T09:00:37.017509+00:00", "interval": "15min", "close": 76898.2, "sar": 77661.7174016, "af": 0.06, "ep": 76706, "trend": "down", "dots_since_flip": 4}
 {"t": 1788340500, "recorded_at": "2026-09-02T09:15:22.181138+00:00", "interval": "15min", "close": 76923, "sar": 77604.374357504, "af": 0.06, "ep": 76706, "trend": "down", "dots_since_flip": 5}
+{"t": 1788340500, "recorded_at": "2026-09-02T09:25:46.891512+00:00", "interval": "15min", "close": 76775.3, "sar": 77604.374357504, "af": 0.08, "ep": 76555.5, "trend": "down", "dots_since_flip": 5}
