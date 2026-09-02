@@ -1,4 +1,19 @@
 {
-  "last_notified_flip_t": null,
-  "last_processed_t": 1788352200
+  "bull": true,
+  "af": 0.06,
+  "ep": 77029.2,
+  "sar": 76241.31395839999,
+  "prev1": {
+    "t": 1788352200,
+    "h": 76957.4,
+    "l": 76868.9
+  },
+  "prev2": {
+    "t": 1788351300,
+    "h": 77029.2,
+    "l": 76730.1
+  },
+  "dots_since_flip": 4,
+  "last_processed_t": 1788352200,
+  "last_notified_flip_t": null
 }
