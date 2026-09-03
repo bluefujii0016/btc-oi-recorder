@@ -42,9 +42,14 @@ import requests
 COINALYZE_API_KEY = os.environ.get("COINALYZE_API_KEY", "")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-SYMBOL = "BTCUSDT_PERP.A"           # Binance BTCUSDT Perp (既存パイプラインと同一スコープ)
+SYMBOL = "BTCUSDT_PERP.A"           # Binance BTCUSDT Perp (SAR/OHLCV計算はこちらに統一)
 INTERVAL = "15min"                  # Coinalyze側の interval 表記
 BOOTSTRAP_LOOKBACK_SECONDS = 60 * 60 * 24 * 3  # 初回起動時のみ: 直近3日分を取得して状態を作る
+
+# 清算データはBinanceの公開清算フィードが2021年以降「1秒あたり1件」に
+# 間引かれているため、実態をより反映しやすいBybitから取得する。
+# あくまで別取引所の近似値であり、SAR計算(Binance基準)とは性質が異なる点に注意。
+LIQUIDATION_SYMBOL = "BTCUSDT.6"    # Bybit BTCUSDT Perp (USDT建て)
 
 AF_START = 0.02
 AF_STEP = 0.02
@@ -87,16 +92,19 @@ def fetch_ohlcv(from_ts=None):
 def fetch_liquidations(from_ts):
     """
     /liquidation-history から、from_ts より後の清算実績を取得。
+    Bybit(BTCUSDT.6)を情報源とする(Binanceは清算フィードが間引かれているため)。
+    convert_to_usd=true でUSD建てに統一して取得。
     戻り値: {t: {"long": ロング清算額USD, "short": ショート清算額USD}}
     取得に失敗しても致命的エラーにはせず、空dictを返す
     (清算データはSAR計算そのものには影響しない付帯情報のため)
     """
     now = int(time.time())
     params = {
-        "symbols": SYMBOL,
+        "symbols": LIQUIDATION_SYMBOL,
         "interval": INTERVAL,
         "from": from_ts,
         "to": now,
+        "convert_to_usd": "true",
     }
     headers = {"api_key": COINALYZE_API_KEY}
     try:
@@ -108,7 +116,7 @@ def fetch_liquidations(from_ts):
         return {h["t"]: {"long": h.get("l", 0), "short": h.get("s", 0)} for h in data[0]["history"]}
     except Exception as e:
         print(f"清算データ取得に失敗(処理は継続): {e}", file=sys.stderr)
-        return {}
+        return None  # 取得失敗(Noneは"不明"、{}は"取得成功・対象時刻の清算実績なし")
 
 
 # ---------------------------------------------------------------------------
@@ -308,10 +316,10 @@ def notify_discord(record):
     dt = datetime.fromtimestamp(record["t"], tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     liq_line = ""
-    if record.get("liq_long") is not None or record.get("liq_short") is not None:
-        liq_long = record.get("liq_long") or 0
-        liq_short = record.get("liq_short") or 0
-        liq_line = f"清算(ロング/ショート): ${liq_long:,.0f} / ${liq_short:,.0f}\n"
+    liq_long = record.get("liq_long_bybit_approx")
+    liq_short = record.get("liq_short_bybit_approx")
+    if liq_long is not None or liq_short is not None:
+        liq_line = f"清算(Bybit近似・ロング/ショート): ${liq_long or 0:,.0f} / ${liq_short or 0:,.0f}\n"
 
     content = (
         f"**SAR転換検知(1点目)**\n"
@@ -321,7 +329,7 @@ def notify_discord(record):
         f"SAR値: {record['sar']:.1f}\n"
         f"AF: {record['af']:.2f}\n"
         f"{liq_line}"
-        f"✅ Coinalyze OHLCV/清算実績から継続計算(Wilder式 0.02/0.02/0.20)"
+        f"✅ SAR:Binance OHLCVから継続計算(Wilder式 0.02/0.02/0.20) / 清算:Bybit近似値"
     )
 
     resp = requests.post(DISCORD_WEBHOOK_URL, json={"content": content}, timeout=15)
@@ -346,7 +354,10 @@ def main():
         state, last_record = bootstrap_psar(bars)
 
         liq_map = fetch_liquidations(from_ts=last_record["t"] - 1)
-        liq = liq_map.get(last_record["t"], {})
+        if liq_map is None:
+            liq = {"long": None, "short": None}  # 取得失敗: 不明
+        else:
+            liq = liq_map.get(last_record["t"], {"long": 0, "short": 0})  # 取得成功・データなし=0件
 
         record = {
             "t": last_record["t"],
@@ -358,8 +369,8 @@ def main():
             "ep": last_record["ep"],
             "trend": last_record["trend"],
             "dots_since_flip": last_record["dots_since_flip"],
-            "liq_long": liq.get("long"),
-            "liq_short": liq.get("short"),
+            "liq_long_bybit_approx": liq.get("long"),
+            "liq_short_bybit_approx": liq.get("short"),
         }
         append_log(record)
         save_state(state)
@@ -386,9 +397,13 @@ def main():
         record["recorded_at"] = datetime.now(timezone.utc).isoformat()
         record["interval"] = INTERVAL
 
-        liq = liq_map.get(bar["t"], {})
-        record["liq_long"] = liq.get("long")
-        record["liq_short"] = liq.get("short")
+        if liq_map is None:
+            record["liq_long_bybit_approx"] = None
+            record["liq_short_bybit_approx"] = None
+        else:
+            liq = liq_map.get(bar["t"], {"long": 0, "short": 0})
+            record["liq_long_bybit_approx"] = liq.get("long")
+            record["liq_short_bybit_approx"] = liq.get("short")
 
         append_log({k: v for k, v in record.items() if k != "reversed"})
 
