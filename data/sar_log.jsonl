@@ -97,3 +97,4 @@
 {"t": 1788408000, "close": 77680, "sar": 77421.17350846625, "af": 0.12000000000000001, "ep": 77797.5, "trend": "up", "dots_since_flip": 12, "recorded_at": "2026-09-03T04:00:35.972988+00:00", "interval": "15min", "liq_long": null, "liq_short": null}
 {"t": 1788408900, "close": 77539.7, "sar": 77466.3326874503, "af": 0.12000000000000001, "ep": 77797.5, "trend": "up", "dots_since_flip": 13, "recorded_at": "2026-09-03T04:15:25.420043+00:00", "interval": "15min", "liq_long": 0.049, "liq_short": 0}
 {"t": 1788409800, "close": 77584.3, "sar": 77506.07276495626, "af": 0.12000000000000001, "ep": 77797.5, "trend": "up", "dots_since_flip": 14, "recorded_at": "2026-09-03T04:30:32.655491+00:00", "interval": "15min", "liq_long": null, "liq_short": null}
+{"t": 1788410700, "close": 77578, "sar": 77797.5, "af": 0.02, "ep": 77522.2, "trend": "down", "dots_since_flip": 1, "recorded_at": "2026-09-03T04:45:24.674739+00:00", "interval": "15min", "liq_long": null, "liq_short": null}
