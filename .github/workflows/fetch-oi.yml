@@ -1,5 +1,4 @@
 name: Fetch BTC OI Data
-
 on:
   schedule:
     # 1時間おき（毎時43分：正時・毎時5分は混雑して遅延しやすいため中途半端な分を指定）
@@ -8,22 +7,18 @@ on:
     - cron: '43 * * * *'
   # 手動実行（Actionsタブの「Run workflow」ボタン）— セットアップ後の動作確認用
   workflow_dispatch:
-
 permissions:
   contents: write
-
 jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Fetch data via Coinalyze and append
         env:
           COINALYZE_API_KEY: ${{ secrets.COINALYZE_API_KEY }}
         run: python3 scripts/fetch_oi.py
-
       - name: Commit and push if changed
         run: |
           git config user.name  "oi-recorder-bot"
@@ -33,5 +28,12 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "record: $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
+
+            # 他ワークフロー(SAR Tracker等)とのpush競合に備え、
+            # rebaseしてからpush、失敗したら少し待って最大3回まで再試行
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && break
+              echo "push失敗、再試行します ($i/3)"
+              sleep 5
+            done
           fi
