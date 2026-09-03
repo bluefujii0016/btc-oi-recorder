@@ -40,4 +40,11 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add data/
           git diff --cached --quiet || git commit -m "sar_tracker: update state/log [skip ci]"
-          git push
+
+          # 他ワークフロー(OI Recorder等)との push 競合に備え、
+          # rebaseしてから push、失敗したら少し待って最大3回まで再試行
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "push失敗、再試行します ($i/3)"
+            sleep 5
+          done
