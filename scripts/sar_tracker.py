@@ -54,6 +54,7 @@ STATE_PATH = "data/sar_state.json"
 LOG_PATH = "data/sar_log.jsonl"
 
 OHLCV_URL = "https://api.coinalyze.net/v1/ohlcv-history"
+LIQUIDATION_URL = "https://api.coinalyze.net/v1/liquidation-history"
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +82,33 @@ def fetch_ohlcv(from_ts=None):
     bars = data[0]["history"]
     bars = sorted(bars, key=lambda b: b["t"])
     return bars
+
+
+def fetch_liquidations(from_ts):
+    """
+    /liquidation-history から、from_ts より後の清算実績を取得。
+    戻り値: {t: {"long": ロング清算額USD, "short": ショート清算額USD}}
+    取得に失敗しても致命的エラーにはせず、空dictを返す
+    (清算データはSAR計算そのものには影響しない付帯情報のため)
+    """
+    now = int(time.time())
+    params = {
+        "symbols": SYMBOL,
+        "interval": INTERVAL,
+        "from": from_ts,
+        "to": now,
+    }
+    headers = {"api_key": COINALYZE_API_KEY}
+    try:
+        resp = requests.get(LIQUIDATION_URL, params=params, headers=headers, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        if not data or "history" not in data[0]:
+            return {}
+        return {h["t"]: {"long": h.get("l", 0), "short": h.get("s", 0)} for h in data[0]["history"]}
+    except Exception as e:
+        print(f"清算データ取得に失敗(処理は継続): {e}", file=sys.stderr)
+        return {}
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +307,12 @@ def notify_discord(record):
     direction_jp = "上昇" if record["trend"] == "up" else "下落"
     dt = datetime.fromtimestamp(record["t"], tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
+    liq_line = ""
+    if record.get("liq_long") is not None or record.get("liq_short") is not None:
+        liq_long = record.get("liq_long") or 0
+        liq_short = record.get("liq_short") or 0
+        liq_line = f"清算(ロング/ショート): ${liq_long:,.0f} / ${liq_short:,.0f}\n"
+
     content = (
         f"**SAR転換検知(1点目)**\n"
         f"方向: {direction_jp}\n"
@@ -286,7 +320,8 @@ def notify_discord(record):
         f"価格: {record['close']:.1f}\n"
         f"SAR値: {record['sar']:.1f}\n"
         f"AF: {record['af']:.2f}\n"
-        f"✅ Coinalyze OHLCVから継続計算(Wilder式 0.02/0.02/0.20)"
+        f"{liq_line}"
+        f"✅ Coinalyze OHLCV/清算実績から継続計算(Wilder式 0.02/0.02/0.20)"
     )
 
     resp = requests.post(DISCORD_WEBHOOK_URL, json={"content": content}, timeout=15)
@@ -310,6 +345,9 @@ def main():
         bars = fetch_ohlcv(from_ts=None)
         state, last_record = bootstrap_psar(bars)
 
+        liq_map = fetch_liquidations(from_ts=last_record["t"] - 1)
+        liq = liq_map.get(last_record["t"], {})
+
         record = {
             "t": last_record["t"],
             "recorded_at": datetime.now(timezone.utc).isoformat(),
@@ -320,6 +358,8 @@ def main():
             "ep": last_record["ep"],
             "trend": last_record["trend"],
             "dots_since_flip": last_record["dots_since_flip"],
+            "liq_long": liq.get("long"),
+            "liq_short": liq.get("short"),
         }
         append_log(record)
         save_state(state)
@@ -337,12 +377,19 @@ def main():
         print("新規バーなし(前回実行から進捗なし)")
         return
 
+    liq_map = fetch_liquidations(from_ts=last_processed_t)
+
     notified_any = False
 
     for bar in new_bars:
         state, record = step_psar(state, bar)
         record["recorded_at"] = datetime.now(timezone.utc).isoformat()
         record["interval"] = INTERVAL
+
+        liq = liq_map.get(bar["t"], {})
+        record["liq_long"] = liq.get("long")
+        record["liq_short"] = liq.get("short")
+
         append_log({k: v for k, v in record.items() if k != "reversed"})
 
         is_new_flip = record["reversed"] and (state.get("last_notified_flip_t") != bar["t"])
