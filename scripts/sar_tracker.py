@@ -304,6 +304,46 @@ def append_log(record):
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
+def backfill_liquidations(liq_map):
+    """
+    清算データはBybit側の集計反映に数分〜数十分のタイムラグがあり、
+    足確定直後に取得すると0のまま記録されてしまうことがある。
+    このため、直近の複数バーの清算データを毎回広めに再取得し、
+    過去に0のまま記録されていたログ行があれば、確定した値で
+    自動的に上書き修正する(自己修復)。
+    liq_map: {t: {"long_btc":.., "short_btc":..}} (fetch_liquidationsの戻り値)
+    """
+    if liq_map is None or not os.path.exists(LOG_PATH):
+        return 0
+
+    with open(LOG_PATH, "r", encoding="utf-8") as f:
+        lines = [line for line in f if line.strip()]
+
+    patched = 0
+    new_lines = []
+    for line in lines:
+        rec = json.loads(line)
+        t = rec.get("t")
+        if t in liq_map:
+            new_long = liq_map[t].get("long_btc", 0) * rec.get("close", 0)
+            new_short = liq_map[t].get("short_btc", 0) * rec.get("close", 0)
+            old_long = rec.get("liq_long_bybit_approx") or 0
+            old_short = rec.get("liq_short_bybit_approx") or 0
+            # 既存が0で、再取得した値がそれより大きい場合のみ上書き(後退はさせない)
+            if new_long > old_long or new_short > old_short:
+                rec["liq_long_bybit_approx"] = max(new_long, old_long)
+                rec["liq_short_bybit_approx"] = max(new_short, old_short)
+                rec["liq_backfilled"] = True
+                patched += 1
+        new_lines.append(json.dumps(rec, ensure_ascii=False))
+
+    if patched > 0:
+        with open(LOG_PATH, "w", encoding="utf-8") as f:
+            f.write("\n".join(new_lines) + "\n")
+
+    return patched
+
+
 # ---------------------------------------------------------------------------
 # Discord通知
 # ---------------------------------------------------------------------------
@@ -319,8 +359,10 @@ def notify_discord(record):
     liq_long = record.get("liq_long_bybit_approx")
     liq_short = record.get("liq_short_bybit_approx")
     if liq_long is not None or liq_short is not None:
-        liq_line = f"清算(Bybit近似・ロング/ショート): ${liq_long or 0:,.0f} / ${liq_short or 0:,.0f}\n"
-
+        liq_line = (
+            f"清算(Bybit近似・ロング/ショート、速報値): "
+            f"${liq_long or 0:,.0f} / ${liq_short or 0:,.0f}\n"
+        )
     content = (
         f"**SAR転換検知(1点目)**\n"
         f"方向: {direction_jp}\n"
@@ -390,7 +432,10 @@ def main():
         print("新規バーなし(前回実行から進捗なし)")
         return
 
-    liq_map = fetch_liquidations(from_ts=last_processed_t)
+    # 清算データはBybit側の集計反映にタイムラグがあるため、
+    # 直近2時間分を広めに取得し、後段でバックフィル(自己修復)に使う
+    LIQ_BACKFILL_LOOKBACK = 60 * 60 * 2
+    liq_map = fetch_liquidations(from_ts=last_processed_t - LIQ_BACKFILL_LOOKBACK)
 
     notified_any = False
 
@@ -415,6 +460,13 @@ def main():
             state["last_notified_flip_t"] = bar["t"]
             notified_any = True
             print(f"=> 転換1点目を検知し、Discordに通知しました (t={bar['t']})", file=sys.stderr)
+
+    # 過去ログの清算データを自己修復(タイムラグで0のまま残っていたものを補正)
+    if liq_map is not None:
+        patched = backfill_liquidations(liq_map)
+        if patched:
+            print(f"清算データのバックフィル: {patched}件を補正しました")
+
 
     save_state(state)
     print(f"新規バー{len(new_bars)}件を処理しました" + ("(通知あり)" if notified_any else "(通知なし)"))
