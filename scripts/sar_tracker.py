@@ -93,10 +93,11 @@ def fetch_liquidations(from_ts):
     """
     /liquidation-history から、from_ts より後の清算実績を取得。
     Bybit(BTCUSDT.6)を情報源とする(Binanceは清算フィードが間引かれているため)。
-    convert_to_usd=true でUSD建てに統一して取得。
-    戻り値: {t: {"long": ロング清算額USD, "short": ショート清算額USD}}
-    取得に失敗しても致命的エラーにはせず、空dictを返す
-    (清算データはSAR計算そのものには影響しない付帯情報のため)
+    レスポンスはBTC建て数量(BASE_ASSET)で返るため、呼び出し側で価格を掛けて
+    USD換算する(Coinalyze側のUSD自動変換パラメータは存在が確認できなかった
+    ため使用しない)。
+    戻り値: {t: {"long_btc": ロング清算量BTC, "short_btc": ショート清算量BTC}}
+    取得に失敗した場合はNoneを返す(取得成功・対象時刻の記録なし、の場合は{})
     """
     now = int(time.time())
     params = {
@@ -104,7 +105,6 @@ def fetch_liquidations(from_ts):
         "interval": INTERVAL,
         "from": from_ts,
         "to": now,
-        "convert_to_usd": "true",
     }
     headers = {"api_key": COINALYZE_API_KEY}
     try:
@@ -113,7 +113,7 @@ def fetch_liquidations(from_ts):
         data = resp.json()
         if not data or "history" not in data[0]:
             return {}
-        return {h["t"]: {"long": h.get("l", 0), "short": h.get("s", 0)} for h in data[0]["history"]}
+        return {h["t"]: {"long_btc": h.get("l", 0), "short_btc": h.get("s", 0)} for h in data[0]["history"]}
     except Exception as e:
         print(f"清算データ取得に失敗(処理は継続): {e}", file=sys.stderr)
         return None  # 取得失敗(Noneは"不明"、{}は"取得成功・対象時刻の清算実績なし")
@@ -355,9 +355,11 @@ def main():
 
         liq_map = fetch_liquidations(from_ts=last_record["t"] - 1)
         if liq_map is None:
-            liq = {"long": None, "short": None}  # 取得失敗: 不明
+            liq_long_usd = liq_short_usd = None  # 取得失敗: 不明
         else:
-            liq = liq_map.get(last_record["t"], {"long": 0, "short": 0})  # 取得成功・データなし=0件
+            liq = liq_map.get(last_record["t"], {"long_btc": 0, "short_btc": 0})  # 取得成功・データなし=0件
+            liq_long_usd = liq.get("long_btc", 0) * last_record["close"]
+            liq_short_usd = liq.get("short_btc", 0) * last_record["close"]
 
         record = {
             "t": last_record["t"],
@@ -369,8 +371,8 @@ def main():
             "ep": last_record["ep"],
             "trend": last_record["trend"],
             "dots_since_flip": last_record["dots_since_flip"],
-            "liq_long_bybit_approx": liq.get("long"),
-            "liq_short_bybit_approx": liq.get("short"),
+            "liq_long_bybit_approx": liq_long_usd,
+            "liq_short_bybit_approx": liq_short_usd,
         }
         append_log(record)
         save_state(state)
@@ -401,9 +403,9 @@ def main():
             record["liq_long_bybit_approx"] = None
             record["liq_short_bybit_approx"] = None
         else:
-            liq = liq_map.get(bar["t"], {"long": 0, "short": 0})
-            record["liq_long_bybit_approx"] = liq.get("long")
-            record["liq_short_bybit_approx"] = liq.get("short")
+            liq = liq_map.get(bar["t"], {"long_btc": 0, "short_btc": 0})
+            record["liq_long_bybit_approx"] = liq.get("long_btc", 0) * bar["c"]
+            record["liq_short_bybit_approx"] = liq.get("short_btc", 0) * bar["c"]
 
         append_log({k: v for k, v in record.items() if k != "reversed"})
 
