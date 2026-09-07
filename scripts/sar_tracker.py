@@ -320,9 +320,19 @@ def backfill_liquidations(liq_map):
         lines = [line for line in f if line.strip()]
 
     patched = 0
+    broken = 0
     new_lines = []
-    for line in lines:
-        rec = json.loads(line)
+    for line_no, line in enumerate(lines, start=1):
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError as e:
+            # 手動編集などで構文が壊れた行があっても、その行はそのまま素通しし、
+            # 他の行の処理・以降の実行を止めない(1行の破損で全体を止めないため)
+            print(f"警告: {line_no}行目のJSON構文が不正なためスキップします: {e}", file=sys.stderr)
+            new_lines.append(line.rstrip("\n"))
+            broken += 1
+            continue
+
         t = rec.get("t")
         if t in liq_map:
             new_long = liq_map[t].get("long_btc", 0) * rec.get("close", 0)
@@ -337,11 +347,15 @@ def backfill_liquidations(liq_map):
                 patched += 1
         new_lines.append(json.dumps(rec, ensure_ascii=False))
 
+    if broken > 0:
+        print(f"警告: 構文不正な行が{broken}件見つかりました。手動編集を確認してください。", file=sys.stderr)
+
     if patched > 0:
         with open(LOG_PATH, "w", encoding="utf-8") as f:
             f.write("\n".join(new_lines) + "\n")
 
     return patched
+
 
 
 # ---------------------------------------------------------------------------
@@ -463,9 +477,14 @@ def main():
 
     # 過去ログの清算データを自己修復(タイムラグで0のまま残っていたものを補正)
     if liq_map is not None:
-        patched = backfill_liquidations(liq_map)
-        if patched:
-            print(f"清算データのバックフィル: {patched}件を補正しました")
+        try:
+            patched = backfill_liquidations(liq_map)
+            if patched:
+                print(f"清算データのバックフィル: {patched}件を補正しました")
+        except Exception as e:
+            # バックフィル処理自体が失敗しても、今回の新規検知・通知・ログ追記は
+            # 既に完了しているため、ここで処理を止めない
+            print(f"バックフィル処理に失敗(処理は継続): {e}", file=sys.stderr)
 
 
     save_state(state)
