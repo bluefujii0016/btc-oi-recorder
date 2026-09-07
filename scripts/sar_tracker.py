@@ -197,6 +197,8 @@ def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
     last_record = {
         "t": ts[-1],
         "close": close[-1],
+        "high": high[-1],
+        "low": low[-1],
         "sar": sar,
         "af": af,
         "ep": ep,
@@ -268,6 +270,8 @@ def step_psar(state, bar, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
     record = {
         "t": bar["t"],
         "close": bar["c"],
+        "high": bar["h"],
+        "low": bar["l"],
         "sar": sar,
         "af": af,
         "ep": ep,
@@ -369,6 +373,12 @@ def notify_discord(record):
     direction_jp = "上昇" if record["trend"] == "up" else "下落"
     dt = datetime.fromtimestamp(record["t"], tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
+    range_line = ""
+    high, low = record.get("high"), record.get("low")
+    if high is not None and low is not None and record.get("close"):
+        range_pct = (high - low) / record["close"] * 100
+        range_line = f"転換足レンジ: 高値{high:.1f} / 安値{low:.1f} (幅{range_pct:.2f}%)\n"
+
     liq_line = ""
     liq_long = record.get("liq_long_bybit_approx")
     liq_short = record.get("liq_short_bybit_approx")
@@ -384,6 +394,7 @@ def notify_discord(record):
         f"価格: {record['close']:.1f}\n"
         f"SAR値: {record['sar']:.1f}\n"
         f"AF: {record['af']:.2f}\n"
+        f"{range_line}"
         f"{liq_line}"
         f"✅ SAR:Binance OHLCVから継続計算(Wilder式 0.02/0.02/0.20) / 清算:Bybit近似値"
     )
@@ -422,6 +433,8 @@ def main():
             "recorded_at": datetime.now(timezone.utc).isoformat(),
             "interval": INTERVAL,
             "close": last_record["close"],
+            "high": last_record["high"],
+            "low": last_record["low"],
             "sar": last_record["sar"],
             "af": last_record["af"],
             "ep": last_record["ep"],
