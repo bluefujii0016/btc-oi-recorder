@@ -510,6 +510,18 @@ def main():
             record["liq_long_bybit_approx"] = liq.get("long_btc", 0) * bar["c"]
             record["liq_short_bybit_approx"] = liq.get("short_btc", 0) * bar["c"]
 
+        # 接近判定は、この行をログに書く前に確定させておく
+        # (後からログだけを見て「この時点で通知が送られたか」が分かるようにするため)
+        approach_fired = False
+        if not record["reversed"]:
+            distance_pct = abs(bar["c"] - record["sar"]) / bar["c"] * 100
+            if distance_pct <= APPROACH_THRESHOLD_PCT and not state.get("approach_notified", False):
+                approach_fired = True
+                record["distance_pct"] = round(distance_pct, 4)
+
+        if approach_fired:
+            record["approach_notified"] = True
+
         append_log({k: v for k, v in record.items() if k != "reversed"})
 
         is_new_flip = record["reversed"] and (state.get("last_notified_flip_t") != bar["t"])
@@ -522,13 +534,10 @@ def main():
         if record["reversed"]:
             # 転換が起きたら、次のトレンドに向けて接近通知のフラグをリセット
             state["approach_notified"] = False
-        else:
-            # 転換していない場合のみ、価格とSARの距離をチェック
-            distance_pct = abs(bar["c"] - record["sar"]) / bar["c"] * 100
-            if distance_pct <= APPROACH_THRESHOLD_PCT and not state.get("approach_notified", False):
-                notify_approach(record, distance_pct)
-                state["approach_notified"] = True
-                print(f"=> SAR接近を検知し、Discordに通知しました (t={bar['t']}, 距離={distance_pct:.2f}%)", file=sys.stderr)
+        elif approach_fired:
+            notify_approach(record, record["distance_pct"])
+            state["approach_notified"] = True
+            print(f"=> SAR接近を検知し、Discordに通知しました (t={bar['t']}, 距離={record['distance_pct']:.2f}%)", file=sys.stderr)
 
     # 過去ログの清算データを自己修復(タイムラグで0のまま残っていたものを補正)
     if liq_map is not None:
