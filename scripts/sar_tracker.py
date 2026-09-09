@@ -55,11 +55,21 @@ AF_START = 0.02
 AF_STEP = 0.02
 AF_MAX = 0.20
 
-# 価格とSAR値の距離がこの割合(%)以内に近づいたら「接近通知」を送る。
+# 価格とSAR値の距離がこの割合(%)以内に近づいたら「接近通知」を送る(絶対距離判定)。
 # n=48件のログ分析(2026-09-08時点)により0.1%に調整済み。
 # 閾値0.1%: 転換直前バーの56%を捕捉、全バー中の該当率10.6%。
 # 通知精度(誤報の少なさ)を優先し、中央値(0.085%)に近い値を採用。
 APPROACH_THRESHOLD_PCT = 0.1
+
+# 1本(15分)あたりの距離の縮小幅がこの値(ポイント)以上なら、
+# 絶対距離が閾値に届いていなくても「急接近」として通知する(速度判定)。
+# 静かに徐々に近づくケースは上記の絶対距離判定で捕捉できるが、
+# 遠い位置から1本で急激に距離を詰めて転換するケース(2026-09-09に実例あり、
+# 縮小幅0.48pt)は絶対距離判定だけでは捕捉できなかったため追加。
+# n=657本のログ分析(2026-09-09時点)による95%タイル(0.285pt)を採用。
+# なお、加速の前兆が全くないまま1本で転換ラインを飛び越えるケース
+# (同日に別途確認済み)は、この速度判定でも原理的に捕捉できない。
+VELOCITY_THRESHOLD_PT = 0.285
 
 STATE_PATH = "data/sar_state.json"
 LOG_PATH = "data/sar_log.jsonl"
@@ -199,6 +209,7 @@ def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "last_processed_t": ts[-1],
         "last_notified_flip_t": None,
         "approach_notified": False,
+        "prev_distance_pct": None,
     }
 
     last_record = {
@@ -273,6 +284,7 @@ def step_psar(state, bar, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "last_processed_t": bar["t"],
         "last_notified_flip_t": state.get("last_notified_flip_t"),
         "approach_notified": state.get("approach_notified", False),
+        "prev_distance_pct": state.get("prev_distance_pct"),
     }
 
     record = {
@@ -411,7 +423,7 @@ def notify_discord(record):
     resp.raise_for_status()
 
 
-def notify_approach(record, distance_pct):
+def notify_approach(record, distance_pct, reason=None, velocity_pt=None):
     if not DISCORD_WEBHOOK_URL:
         print("DISCORD_WEBHOOK_URL未設定のため通知をスキップします", file=sys.stderr)
         return
@@ -419,13 +431,19 @@ def notify_approach(record, distance_pct):
     trend_jp = "上昇" if record["trend"] == "up" else "下落"
     dt = datetime.fromtimestamp(record["t"], tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
+    if reason == "速度":
+        reason_line = f"検知理由: 急接近(1本で{velocity_pt:.2f}pt縮小、閾値{VELOCITY_THRESHOLD_PT}pt以上)\n"
+    else:
+        reason_line = f"検知理由: 絶対距離(閾値{APPROACH_THRESHOLD_PCT}%以内)\n"
+
     content = (
         f"**SAR接近通知(転換の可能性あり)**\n"
         f"現在のトレンド: {trend_jp}\n"
         f"時刻: {dt}\n"
         f"価格: {record['close']:.1f}\n"
         f"SAR値: {record['sar']:.1f}\n"
-        f"距離: {distance_pct:.2f}%(閾値{APPROACH_THRESHOLD_PCT}%以内)\n"
+        f"距離: {distance_pct:.2f}%\n"
+        f"{reason_line}"
         f"dots_since_flip: {record['dots_since_flip']}\n"
         f"⚠️ 転換が確定したわけではありません。次の足で転換しない可能性もあります。"
     )
@@ -512,12 +530,36 @@ def main():
 
         # 接近判定は、この行をログに書く前に確定させておく
         # (後からログだけを見て「この時点で通知が送られたか」が分かるようにするため)
+        # ①絶対距離が閾値以内、②1本での縮小幅(速度)が閾値以上、のいずれかで発火
         approach_fired = False
+        approach_reason = None
         if not record["reversed"]:
             distance_pct = abs(bar["c"] - record["sar"]) / bar["c"] * 100
-            if distance_pct <= APPROACH_THRESHOLD_PCT and not state.get("approach_notified", False):
-                approach_fired = True
+            prev_distance_pct = state.get("prev_distance_pct")
+            velocity_pt = None
+            if prev_distance_pct is not None:
+                velocity_pt = prev_distance_pct - distance_pct  # 正の値=縮小
+
+            if not state.get("approach_notified", False):
+                if distance_pct <= APPROACH_THRESHOLD_PCT:
+                    approach_fired = True
+                    approach_reason = "距離"
+                elif velocity_pt is not None and velocity_pt >= VELOCITY_THRESHOLD_PT:
+                    approach_fired = True
+                    approach_reason = "速度"
+
+            if approach_fired:
                 record["distance_pct"] = round(distance_pct, 4)
+                if velocity_pt is not None:
+                    record["velocity_pt"] = round(velocity_pt, 4)
+                record["approach_reason"] = approach_reason
+
+            # 次のバーで速度を計算できるよう、今回の距離を保存しておく
+            state["prev_distance_pct"] = distance_pct
+        else:
+            # 転換が起きたら、次のトレンドの立ち上がりであり比較対象が変わるため
+            # 速度計算の基準もリセットする
+            state["prev_distance_pct"] = None
 
         if approach_fired:
             record["approach_notified"] = True
@@ -535,9 +577,13 @@ def main():
             # 転換が起きたら、次のトレンドに向けて接近通知のフラグをリセット
             state["approach_notified"] = False
         elif approach_fired:
-            notify_approach(record, record["distance_pct"])
+            notify_approach(record, record["distance_pct"], approach_reason, record.get("velocity_pt"))
             state["approach_notified"] = True
-            print(f"=> SAR接近を検知し、Discordに通知しました (t={bar['t']}, 距離={record['distance_pct']:.2f}%)", file=sys.stderr)
+            print(
+                f"=> SAR接近を検知し、Discordに通知しました "
+                f"(t={bar['t']}, 理由={approach_reason}, 距離={record['distance_pct']:.2f}%)",
+                file=sys.stderr,
+            )
 
     # 過去ログの清算データを自己修復(タイムラグで0のまま残っていたものを補正)
     if liq_map is not None:
