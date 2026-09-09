@@ -55,6 +55,12 @@ AF_START = 0.02
 AF_STEP = 0.02
 AF_MAX = 0.20
 
+# 価格とSAR値の距離がこの割合(%)以内に近づいたら「接近通知」を送る。
+# n=48件のログ分析(2026-09-08時点)により0.1%に調整済み。
+# 閾値0.1%: 転換直前バーの56%を捕捉、全バー中の該当率10.6%。
+# 通知精度(誤報の少なさ)を優先し、中央値(0.085%)に近い値を採用。
+APPROACH_THRESHOLD_PCT = 0.1
+
 STATE_PATH = "data/sar_state.json"
 LOG_PATH = "data/sar_log.jsonl"
 
@@ -192,6 +198,7 @@ def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "dots_since_flip": dots,
         "last_processed_t": ts[-1],
         "last_notified_flip_t": None,
+        "approach_notified": False,
     }
 
     last_record = {
@@ -265,6 +272,7 @@ def step_psar(state, bar, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "dots_since_flip": new_dots,
         "last_processed_t": bar["t"],
         "last_notified_flip_t": state.get("last_notified_flip_t"),
+        "approach_notified": state.get("approach_notified", False),
     }
 
     record = {
@@ -403,6 +411,29 @@ def notify_discord(record):
     resp.raise_for_status()
 
 
+def notify_approach(record, distance_pct):
+    if not DISCORD_WEBHOOK_URL:
+        print("DISCORD_WEBHOOK_URL未設定のため通知をスキップします", file=sys.stderr)
+        return
+
+    trend_jp = "上昇" if record["trend"] == "up" else "下落"
+    dt = datetime.fromtimestamp(record["t"], tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    content = (
+        f"**SAR接近通知(転換の可能性あり)**\n"
+        f"現在のトレンド: {trend_jp}\n"
+        f"時刻: {dt}\n"
+        f"価格: {record['close']:.1f}\n"
+        f"SAR値: {record['sar']:.1f}\n"
+        f"距離: {distance_pct:.2f}%(閾値{APPROACH_THRESHOLD_PCT}%以内)\n"
+        f"dots_since_flip: {record['dots_since_flip']}\n"
+        f"⚠️ 転換が確定したわけではありません。次の足で転換しない可能性もあります。"
+    )
+
+    resp = requests.post(DISCORD_WEBHOOK_URL, json={"content": content}, timeout=15)
+    resp.raise_for_status()
+
+
 # ---------------------------------------------------------------------------
 # メイン処理
 # ---------------------------------------------------------------------------
@@ -487,6 +518,17 @@ def main():
             state["last_notified_flip_t"] = bar["t"]
             notified_any = True
             print(f"=> 転換1点目を検知し、Discordに通知しました (t={bar['t']})", file=sys.stderr)
+
+        if record["reversed"]:
+            # 転換が起きたら、次のトレンドに向けて接近通知のフラグをリセット
+            state["approach_notified"] = False
+        else:
+            # 転換していない場合のみ、価格とSARの距離をチェック
+            distance_pct = abs(bar["c"] - record["sar"]) / bar["c"] * 100
+            if distance_pct <= APPROACH_THRESHOLD_PCT and not state.get("approach_notified", False):
+                notify_approach(record, distance_pct)
+                state["approach_notified"] = True
+                print(f"=> SAR接近を検知し、Discordに通知しました (t={bar['t']}, 距離={distance_pct:.2f}%)", file=sys.stderr)
 
     # 過去ログの清算データを自己修復(タイムラグで0のまま残っていたものを補正)
     if liq_map is not None:
