@@ -136,6 +136,169 @@ def fetch_liquidations(from_ts):
 
 
 # ---------------------------------------------------------------------------
+# ローソク足パターン判定(ログ記録専用・Discord通知には出さない)
+#
+# 「チャートパターン言語化リファレンス.md」の第3章(ローソク足パターン)を
+# 機械的に判定する。定義があいまいな項目(足数の指定がない
+# Bearish Breakaway等)は誤判定を避けるため実装せず対象外とした。
+#
+# 前提・注意点:
+#  - BTCは24時間取引のため株式のような「窓(ギャップ)」は本来存在しないが、
+#    ここでは「1本前の終値と当該足の始値の差」をギャップの代理として扱う。
+#    GAP_THRESHOLD_PCT未満の差は「ギャップなし」とみなす(閾値は仮設定、
+#    検証で調整の余地あり)
+#  - 「高値圏/安値圏」の判定は、直近LOOKBACK本の中でその足が
+#    最高値/最安値を付けているかで代用する(仮の定義)
+#  - トレンド方向の文脈(上昇中/下降中)は、SAR側で計算済みのtrendを流用する
+# ---------------------------------------------------------------------------
+GAP_THRESHOLD_PCT = 0.02  # 始値と前足終値の差が、この割合(%)以上ならギャップありとみなす
+ZONE_LOOKBACK = 8         # 高値圏/安値圏判定に使う遡り本数
+RECENT_BARS_MAXLEN = ZONE_LOOKBACK + 4  # パターン判定に必要な直近バー保持数(4本パターン+高値圏判定の余裕分)
+
+
+def _is_bullish(bar):
+    return bar["c"] > bar["o"]
+
+
+def _is_bearish(bar):
+    return bar["c"] < bar["o"]
+
+
+def _body(bar):
+    return abs(bar["c"] - bar["o"])
+
+
+def _range(bar):
+    return bar["h"] - bar["l"]
+
+
+def _is_small_body(bar, ratio=0.3):
+    r = _range(bar)
+    return r > 0 and _body(bar) / r <= ratio
+
+
+def detect_candlestick_patterns(recent_bars, trend):
+    """
+    recent_bars: 直近の足を古い順に並べたリスト(各要素は o/h/l/c を持つdict)。
+                 最後の要素が「今回判定対象の足」。
+    trend: 現在のSARトレンド("up"/"down") — 文脈判定の代用に使う
+    戻り値: 検出されたパターン名のリスト(なければ空リスト)
+    """
+    patterns = []
+    n = len(recent_bars)
+    if n < 1:
+        return patterns
+    cur = recent_bars[-1]
+
+    # --- 2本パターン ---
+    if n >= 2:
+        prev1 = recent_bars[-2]
+        gap_up = (cur["o"] - prev1["c"]) / prev1["c"] * 100 >= GAP_THRESHOLD_PCT
+        gap_down = (prev1["c"] - cur["o"]) / prev1["c"] * 100 >= GAP_THRESHOLD_PCT
+
+        # Two Black Gapping: 下降中、窓を開けて陰線、さらに安値を更新する陰線
+        if _is_bearish(prev1) and _is_bearish(cur) and gap_down and cur["l"] < prev1["l"]:
+            patterns.append("Two Black Gapping")
+
+        # Matching Low: 安値圏で、終値がほぼ同水準の陰線が2本連続
+        if _is_bearish(prev1) and _is_bearish(cur):
+            close_diff_pct = abs(cur["c"] - prev1["c"]) / prev1["c"] * 100
+            if close_diff_pct <= GAP_THRESHOLD_PCT:
+                patterns.append("Matching Low")
+
+        # Inverted Hammer(天井圏、簡易確認): 上ヒゲが長く実体が小さい足が、
+        # 直近ZONE_LOOKBACK本の中で最高値を付けており、翌足が陰線で確認
+        upper_wick = prev1["h"] - max(prev1["o"], prev1["c"])
+        lower_wick = min(prev1["o"], prev1["c"]) - prev1["l"]
+        zone_window = recent_bars[max(0, n-1-ZONE_LOOKBACK):n-1]  # prev1を含まない、それ以前の本数
+        is_at_high = (not zone_window) or prev1["h"] >= max(b["h"] for b in zone_window)
+        if (
+            _is_small_body(prev1)
+            and upper_wick > _body(prev1) * 2
+            and lower_wick < _body(prev1)
+            and is_at_high
+            and _is_bearish(cur)
+        ):
+            patterns.append("Inverted Hammer(天井圏)")
+
+    # --- 3本パターン ---
+    if n >= 3:
+        b1, b2, b3 = recent_bars[-3], recent_bars[-2], recent_bars[-1]
+
+        gap_up_2 = (b2["o"] - b1["c"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT
+        gap_up_3 = (b3["o"] - b2["c"]) / b2["c"] * 100 >= GAP_THRESHOLD_PCT if _is_bullish(b1) else False
+
+        # Evening Star: 陽線 → 窓を開けた小さい実体 → 陽線の実体を大きく飲み込む陰線
+        if (
+            _is_bullish(b1)
+            and not _is_small_body(b1, ratio=0.6)
+            and (b2["o"] - b1["c"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT
+            and _is_small_body(b2)
+            and _is_bearish(b3)
+            and b3["c"] < (b1["o"] + b1["c"]) / 2
+        ):
+            patterns.append("Evening Star")
+
+        # Bullish Abandoned Baby: 下降陰線 → 窓開け小実体 → 窓開け陽線
+        gap1_down = (b1["c"] - b2["o"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT if b2["o"] < b1["c"] else False
+        gap2_up = (b3["o"] - b2["c"]) / b2["c"] * 100 >= GAP_THRESHOLD_PCT if b3["o"] > b2["c"] else False
+        if (
+            _is_bearish(b1)
+            and _is_small_body(b2)
+            and max(b2["o"], b2["c"]) < b1["c"]
+            and _is_bullish(b3)
+            and min(b3["o"], b3["c"]) > b2["c"]
+        ):
+            patterns.append("Bullish Abandoned Baby")
+
+        # Upside Tasuki Gap: 上昇中の陽線 → 窓を開けて陽線 → 窓を埋めない小幅な陰線
+        if (
+            _is_bullish(b1)
+            and _is_bullish(b2)
+            and (b2["o"] - b1["c"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT
+            and _is_bearish(b3)
+            and b3["o"] < b2["c"]  # b2実体内(終値より下)から始まる
+            and b3["c"] > b1["c"]  # 窓(b1["c"]〜b2["o"])を埋めきっていない
+        ):
+            patterns.append("Upside Tasuki Gap")
+
+        # Three Black Crows: 実体の大きい陰線が3本連続で安値切り下げ
+        if (
+            _is_bearish(b1) and _is_bearish(b2) and _is_bearish(b3)
+            and not _is_small_body(b1) and not _is_small_body(b2) and not _is_small_body(b3)
+            and b2["c"] < b1["c"] < b2["o"]
+            and b3["c"] < b2["c"] < b3["o"]
+        ):
+            patterns.append("Three Black Crows")
+
+    # --- 4本パターン ---
+    if n >= 4:
+        b1, b2, b3, b4 = recent_bars[-4], recent_bars[-3], recent_bars[-2], recent_bars[-1]
+
+        # Bullish Three Line Strike: 陰線3本の下降トレンド中に、直前3本を丸ごと飲み込む大陽線
+        if (
+            _is_bearish(b1) and _is_bearish(b2) and _is_bearish(b3)
+            and b2["c"] < b1["c"] and b3["c"] < b2["c"]
+            and _is_bullish(b4)
+            and b4["o"] <= b3["c"]
+            and b4["c"] > b1["o"]
+        ):
+            patterns.append("Bullish Three Line Strike")
+
+        # Bearish Three Line Strike: 陽線3本の上昇トレンド中に、直前3本を丸ごと飲み込む大陰線
+        if (
+            _is_bullish(b1) and _is_bullish(b2) and _is_bullish(b3)
+            and b2["c"] > b1["c"] and b3["c"] > b2["c"]
+            and _is_bearish(b4)
+            and b4["o"] >= b3["c"]
+            and b4["c"] < b1["o"]
+        ):
+            patterns.append("Bearish Three Line Strike")
+
+    return patterns
+
+
+# ---------------------------------------------------------------------------
 # Wilder式 Parabolic SAR: 初回起動用(ゼロから系列全体を計算)
 # ---------------------------------------------------------------------------
 def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
@@ -150,6 +313,7 @@ def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
     high = [b["h"] for b in bars]
     low = [b["l"] for b in bars]
     close = [b["c"] for b in bars]
+    open_ = [b["o"] for b in bars]
     ts = [b["t"] for b in bars]
 
     bull = close[1] >= close[0]
@@ -198,6 +362,12 @@ def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
     prev1 = {"t": ts[-1], "h": high[-1], "l": low[-1]}
     prev2 = {"t": ts[-2], "h": high[-2], "l": low[-2]}
 
+    # パターン判定用に、直近RECENT_BARS_MAXLEN本のOHLCを保持しておく
+    recent_bars = [
+        {"o": open_[i], "h": high[i], "l": low[i], "c": close[i]}
+        for i in range(max(0, n - RECENT_BARS_MAXLEN), n)
+    ]
+
     state = {
         "bull": bull,
         "af": af,
@@ -210,11 +380,13 @@ def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "last_notified_flip_t": None,
         "approach_notified": False,
         "prev_distance_pct": None,
+        "recent_bars": recent_bars,
     }
 
     last_record = {
         "t": ts[-1],
         "close": close[-1],
+        "open": open_[-1],
         "high": high[-1],
         "low": low[-1],
         "sar": sar,
@@ -223,6 +395,7 @@ def bootstrap_psar(bars, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "trend": "up" if bull else "down",
         "reversed": False,  # 起動直後は転換判定を行わない(誤通知防止)
         "dots_since_flip": dots,
+        "candlestick_patterns": detect_candlestick_patterns(recent_bars, "up" if bull else "down"),
     }
 
     return state, last_record
@@ -273,6 +446,11 @@ def step_psar(state, bar, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
 
     new_dots = 1 if reversed_flag else state["dots_since_flip"] + 1
 
+    # 直近バーのOHLC履歴を更新(パターン判定用)。RECENT_BARS_MAXLEN本を超えたら古い方を捨てる
+    recent_bars = list(state.get("recent_bars", []))
+    recent_bars.append({"o": bar["o"], "h": bar["h"], "l": bar["l"], "c": bar["c"]})
+    recent_bars = recent_bars[-RECENT_BARS_MAXLEN:]
+
     new_state = {
         "bull": bull,
         "af": af,
@@ -285,11 +463,13 @@ def step_psar(state, bar, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "last_notified_flip_t": state.get("last_notified_flip_t"),
         "approach_notified": state.get("approach_notified", False),
         "prev_distance_pct": state.get("prev_distance_pct"),
+        "recent_bars": recent_bars,
     }
 
     record = {
         "t": bar["t"],
         "close": bar["c"],
+        "open": bar["o"],
         "high": bar["h"],
         "low": bar["l"],
         "sar": sar,
@@ -298,6 +478,7 @@ def step_psar(state, bar, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
         "trend": "up" if bull else "down",
         "reversed": reversed_flag,
         "dots_since_flip": new_dots,
+        "candlestick_patterns": detect_candlestick_patterns(recent_bars, "up" if bull else "down"),
     }
 
     return new_state, record
@@ -482,6 +663,7 @@ def main():
             "recorded_at": datetime.now(timezone.utc).isoformat(),
             "interval": INTERVAL,
             "close": last_record["close"],
+            "open": last_record["open"],
             "high": last_record["high"],
             "low": last_record["low"],
             "sar": last_record["sar"],
@@ -492,6 +674,8 @@ def main():
             "liq_long_bybit_approx": liq_long_usd,
             "liq_short_bybit_approx": liq_short_usd,
         }
+        if last_record.get("candlestick_patterns"):
+            record["candlestick_patterns"] = last_record["candlestick_patterns"]
         append_log(record)
         save_state(state)
         print("初回起動(bootstrap)完了。次回実行から継続計算に入ります。")
@@ -563,6 +747,9 @@ def main():
 
         if approach_fired:
             record["approach_notified"] = True
+
+        if not record.get("candlestick_patterns"):
+            record.pop("candlestick_patterns", None)
 
         append_log({k: v for k, v in record.items() if k != "reversed"})
 
