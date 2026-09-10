@@ -1,21 +1,21 @@
 {
   "bull": false,
-  "af": 0.14,
-  "ep": 76838.5,
-  "sar": 77935.8,
+  "af": 0.16,
+  "ep": 76799.9,
+  "sar": 77782.178,
   "prev1": {
+    "t": 1789046100,
+    "h": 76825.9,
+    "l": 76799.9
+  },
+  "prev2": {
     "t": 1789045200,
     "h": 76900,
     "l": 76838.5
   },
-  "prev2": {
-    "t": 1789044300,
-    "h": 77144,
-    "l": 77089.1
-  },
-  "dots_since_flip": 14,
-  "last_processed_t": 1789045200,
+  "dots_since_flip": 15,
+  "last_processed_t": 1789046100,
   "last_notified_flip_t": 1789033500,
   "approach_notified": false,
-  "prev_distance_pct": 1.3469440832249713
+  "prev_distance_pct": 1.2655601281602211
 }
