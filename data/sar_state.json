@@ -4,18 +4,18 @@
   "ep": 77931.9,
   "sar": 78174.6,
   "prev1": {
+    "t": 1789034400,
+    "h": 77964.1,
+    "l": 77941.5
+  },
+  "prev2": {
     "t": 1789033500,
     "h": 77955.2,
     "l": 77931.9
   },
-  "prev2": {
-    "t": 1789032600,
-    "h": 78174.6,
-    "l": 78143.4
-  },
-  "dots_since_flip": 1,
-  "last_processed_t": 1789033500,
+  "dots_since_flip": 2,
+  "last_processed_t": 1789034400,
   "last_notified_flip_t": 1789033500,
   "approach_notified": false,
-  "prev_distance_pct": null
+  "prev_distance_pct": 0.298941771788108
 }
