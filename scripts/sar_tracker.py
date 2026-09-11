@@ -196,24 +196,25 @@ def detect_candlestick_patterns(recent_bars, trend):
         gap_up = (cur["o"] - prev1["c"]) / prev1["c"] * 100 >= GAP_THRESHOLD_PCT
         gap_down = (prev1["c"] - cur["o"]) / prev1["c"] * 100 >= GAP_THRESHOLD_PCT
 
-        # Two Black Gapping: 下降中、窓を開けて陰線、さらに安値を更新する陰線
-        if _is_bearish(prev1) and _is_bearish(cur) and gap_down and cur["l"] < prev1["l"]:
+        # Two Black Gapping: 下降トレンド中、窓を開けて陰線、さらに安値を更新する陰線
+        if trend == "down" and _is_bearish(prev1) and _is_bearish(cur) and gap_down and cur["l"] < prev1["l"]:
             patterns.append("Two Black Gapping")
 
-        # Matching Low: 安値圏で、終値がほぼ同水準の陰線が2本連続
-        if _is_bearish(prev1) and _is_bearish(cur):
+        # Matching Low: 下降トレンド中の安値圏で、終値がほぼ同水準の陰線が2本連続(下げ止まりの兆候)
+        if trend == "down" and _is_bearish(prev1) and _is_bearish(cur):
             close_diff_pct = abs(cur["c"] - prev1["c"]) / prev1["c"] * 100
             if close_diff_pct <= GAP_THRESHOLD_PCT:
                 patterns.append("Matching Low")
 
-        # Inverted Hammer(天井圏、簡易確認): 上ヒゲが長く実体が小さい足が、
+        # Inverted Hammer(天井圏、簡易確認): 上昇トレンド中、上ヒゲが長く実体が小さい足が、
         # 直近ZONE_LOOKBACK本の中で最高値を付けており、翌足が陰線で確認
         upper_wick = prev1["h"] - max(prev1["o"], prev1["c"])
         lower_wick = min(prev1["o"], prev1["c"]) - prev1["l"]
         zone_window = recent_bars[max(0, n-1-ZONE_LOOKBACK):n-1]  # prev1を含まない、それ以前の本数
         is_at_high = (not zone_window) or prev1["h"] >= max(b["h"] for b in zone_window)
         if (
-            _is_small_body(prev1)
+            trend == "up"
+            and _is_small_body(prev1)
             and upper_wick > _body(prev1) * 2
             and lower_wick < _body(prev1)
             and is_at_high
@@ -228,9 +229,10 @@ def detect_candlestick_patterns(recent_bars, trend):
         gap_up_2 = (b2["o"] - b1["c"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT
         gap_up_3 = (b3["o"] - b2["c"]) / b2["c"] * 100 >= GAP_THRESHOLD_PCT if _is_bullish(b1) else False
 
-        # Evening Star: 陽線 → 窓を開けた小さい実体 → 陽線の実体を大きく飲み込む陰線
+        # Evening Star: 上昇トレンド中、陽線 → 窓を開けた小さい実体 → 陽線の実体を大きく飲み込む陰線
         if (
-            _is_bullish(b1)
+            trend == "up"
+            and _is_bullish(b1)
             and not _is_small_body(b1, ratio=0.6)
             and (b2["o"] - b1["c"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT
             and _is_small_body(b2)
@@ -239,11 +241,12 @@ def detect_candlestick_patterns(recent_bars, trend):
         ):
             patterns.append("Evening Star")
 
-        # Bullish Abandoned Baby: 下降陰線 → 窓開け小実体 → 窓開け陽線
+        # Bullish Abandoned Baby: 下降トレンド中、下降陰線 → 窓開け小実体 → 窓開け陽線
         gap1_down = (b1["c"] - b2["o"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT if b2["o"] < b1["c"] else False
         gap2_up = (b3["o"] - b2["c"]) / b2["c"] * 100 >= GAP_THRESHOLD_PCT if b3["o"] > b2["c"] else False
         if (
-            _is_bearish(b1)
+            trend == "down"
+            and _is_bearish(b1)
             and _is_small_body(b2)
             and max(b2["o"], b2["c"]) < b1["c"]
             and _is_bullish(b3)
@@ -251,9 +254,10 @@ def detect_candlestick_patterns(recent_bars, trend):
         ):
             patterns.append("Bullish Abandoned Baby")
 
-        # Upside Tasuki Gap: 上昇中の陽線 → 窓を開けて陽線 → 窓を埋めない小幅な陰線
+        # Upside Tasuki Gap: 上昇トレンド中の陽線 → 窓を開けて陽線 → 窓を埋めない小幅な陰線
         if (
-            _is_bullish(b1)
+            trend == "up"
+            and _is_bullish(b1)
             and _is_bullish(b2)
             and (b2["o"] - b1["c"]) / b1["c"] * 100 >= GAP_THRESHOLD_PCT
             and _is_bearish(b3)
@@ -262,9 +266,10 @@ def detect_candlestick_patterns(recent_bars, trend):
         ):
             patterns.append("Upside Tasuki Gap")
 
-        # Three Black Crows: 実体の大きい陰線が3本連続で安値切り下げ
+        # Three Black Crows: 上昇トレンド後(反転文脈)、実体の大きい陰線が3本連続で安値切り下げ
         if (
-            _is_bearish(b1) and _is_bearish(b2) and _is_bearish(b3)
+            trend == "up"
+            and _is_bearish(b1) and _is_bearish(b2) and _is_bearish(b3)
             and not _is_small_body(b1) and not _is_small_body(b2) and not _is_small_body(b3)
             and b2["c"] < b1["c"] < b2["o"]
             and b3["c"] < b2["c"] < b3["o"]
@@ -275,9 +280,10 @@ def detect_candlestick_patterns(recent_bars, trend):
     if n >= 4:
         b1, b2, b3, b4 = recent_bars[-4], recent_bars[-3], recent_bars[-2], recent_bars[-1]
 
-        # Bullish Three Line Strike: 陰線3本の下降トレンド中に、直前3本を丸ごと飲み込む大陽線
+        # Bullish Three Line Strike: 下降トレンド中、陰線3本の後に、直前3本を丸ごと飲み込む大陽線
         if (
-            _is_bearish(b1) and _is_bearish(b2) and _is_bearish(b3)
+            trend == "down"
+            and _is_bearish(b1) and _is_bearish(b2) and _is_bearish(b3)
             and b2["c"] < b1["c"] and b3["c"] < b2["c"]
             and _is_bullish(b4)
             and b4["o"] <= b3["c"]
@@ -285,9 +291,10 @@ def detect_candlestick_patterns(recent_bars, trend):
         ):
             patterns.append("Bullish Three Line Strike")
 
-        # Bearish Three Line Strike: 陽線3本の上昇トレンド中に、直前3本を丸ごと飲み込む大陰線
+        # Bearish Three Line Strike: 上昇トレンド中、陽線3本の後に、直前3本を丸ごと飲み込む大陰線
         if (
-            _is_bullish(b1) and _is_bullish(b2) and _is_bullish(b3)
+            trend == "up"
+            and _is_bullish(b1) and _is_bullish(b2) and _is_bullish(b3)
             and b2["c"] > b1["c"] and b3["c"] > b2["c"]
             and _is_bearish(b4)
             and b4["o"] >= b3["c"]
