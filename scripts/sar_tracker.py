@@ -752,8 +752,12 @@ def main():
             # 速度計算の基準もリセットする
             state["prev_distance_pct"] = None
 
-        if approach_fired:
-            record["approach_notified"] = True
+        # 抑制フラグは「絶対距離が閾値以内に入ったか」だけで立てる。
+        # 距離型は定義上必ず閾値以内なので毎回抑制対象になるが、
+        # 速度型は「大きく動いたが、まだ距離自体は遠い」場合は抑制せず、
+        # 同じトレンド中に再度の急接近があれば重ねて通知できるようにする。
+        if approach_fired and not record["reversed"] and distance_pct <= APPROACH_THRESHOLD_PCT:
+            state["approach_notified"] = True
 
         if not record.get("candlestick_patterns"):
             record.pop("candlestick_patterns", None)
@@ -772,10 +776,10 @@ def main():
             state["approach_notified"] = False
         elif approach_fired:
             notify_approach(record, record["distance_pct"], approach_reason, record.get("velocity_pt"))
-            state["approach_notified"] = True
             print(
                 f"=> SAR接近を検知し、Discordに通知しました "
-                f"(t={bar['t']}, 理由={approach_reason}, 距離={record['distance_pct']:.2f}%)",
+                f"(t={bar['t']}, 理由={approach_reason}, 距離={record['distance_pct']:.2f}%, "
+                f"抑制フラグ={'ON' if state.get('approach_notified') else 'OFF(再発火あり得る)'})",
                 file=sys.stderr,
             )
 
