@@ -37,3 +37,15 @@ jobs:
               sleep 5
             done
           fi
+      - name: Deploy oi_history.json to Xserver (FTPS)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.XSERVER_HOST }}
+          username: ${{ secrets.XSERVER_USER }}
+          password: ${{ secrets.XSERVER_PASSWORD }}
+          protocol: ftps
+          local-dir: ./data/
+          server-dir: ./data/
+          exclude: |
+            **/*
+            !oi_history.json
