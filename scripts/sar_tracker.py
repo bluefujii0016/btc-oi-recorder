@@ -105,6 +105,50 @@ def fetch_ohlcv(from_ts=None):
     return bars
 
 
+# ---------------------------------------------------------------------------
+# 上位足トレンド方向(参考情報・Discord通知に事実として表示)
+#
+# 「現在の終値」と「N時間前の終値」を比較するだけの、最も単純な定義。
+# どの時間窓(8h/12h/24h)が転換の的中率と相関するかは未検証のため、
+# 1つに絞らず全て計算してログに残す。窓の選定は分析セッション側で行う。
+# ステートレス(state.jsonに何も持たせない)設計とし、毎回1回のAPI呼び出しで
+# 必要な範囲のOHLCVを取得して都度計算する(引き継ぎ忘れによるバグを避けるため)。
+# ---------------------------------------------------------------------------
+TREND_WINDOWS_HOURS = [8, 12, 24]
+
+
+def fetch_trend_directions(reference_t, reference_close, hours_list=TREND_WINDOWS_HOURS, tolerance=2700):
+    """
+    reference_t/reference_close: 基準時刻とその時点の終値
+    戻り値: {"trend_8h": "up"/"down"/None, "trend_12h": ..., "trend_24h": ...}
+    取得に失敗した場合、または該当時刻のデータがまだ十分に貯まっていない場合は
+    該当キーをNoneにする(致命的エラーにはしない)
+    """
+    result = {f"trend_{h}h": None for h in hours_list}
+    try:
+        max_hours = max(hours_list)
+        from_ts = reference_t - max_hours * 3600 - tolerance
+        bars = fetch_ohlcv(from_ts=from_ts)
+    except Exception as e:
+        print(f"上位足トレンド取得に失敗(処理は継続): {e}", file=sys.stderr)
+        return result
+
+    if not bars:
+        return result
+
+    for h in hours_list:
+        target_t = reference_t - h * 3600
+        best, best_diff = None, None
+        for b in bars:
+            diff = abs(b["t"] - target_t)
+            if diff <= tolerance and (best_diff is None or diff < best_diff):
+                best, best_diff = b, diff
+        if best is not None:
+            result[f"trend_{h}h"] = "up" if reference_close > best["c"] else "down"
+
+    return result
+
+
 def fetch_liquidations(from_ts):
     """
     /liquidation-history から、from_ts より後の清算実績を取得。
@@ -573,6 +617,18 @@ def backfill_liquidations(liq_map):
 # ---------------------------------------------------------------------------
 # Discord通知
 # ---------------------------------------------------------------------------
+def _format_trend_directions_line(record):
+    labels = {"up": "上昇", "down": "下落"}
+    parts = []
+    for h in TREND_WINDOWS_HOURS:
+        val = record.get(f"trend_{h}h")
+        if val is not None:
+            parts.append(f"{h}h={labels.get(val, val)}")
+    if not parts:
+        return ""
+    return f"参考(上位足方向): {' / '.join(parts)}\n"
+
+
 def notify_discord(record):
     if not DISCORD_WEBHOOK_URL:
         print("DISCORD_WEBHOOK_URL未設定のため通知をスキップします", file=sys.stderr)
@@ -595,8 +651,12 @@ def notify_discord(record):
             f"清算(Bybit近似・ロング/ショート、速報値): "
             f"${liq_long or 0:,.0f} / ${liq_short or 0:,.0f}\n"
         )
+
+    trend_line = _format_trend_directions_line(record)
+
     content = (
         f"**SAR転換検知(1点目)**\n"
+        f"{trend_line}"
         f"方向: {direction_jp}\n"
         f"時刻: {dt}\n"
         f"価格: {record['close']:.1f}\n"
@@ -624,8 +684,11 @@ def notify_approach(record, distance_pct, reason=None, velocity_pt=None):
     else:
         reason_line = f"検知理由: 絶対距離(閾値{APPROACH_THRESHOLD_PCT}%以内)\n"
 
+    trend_line = _format_trend_directions_line(record)
+
     content = (
         f"**SAR接近通知(転換の可能性あり)**\n"
+        f"{trend_line}"
         f"現在のトレンド: {trend_jp}\n"
         f"時刻: {dt}\n"
         f"価格: {record['close']:.1f}\n"
@@ -704,12 +767,21 @@ def main():
     LIQ_BACKFILL_LOOKBACK = 60 * 60 * 2
     liq_map = fetch_liquidations(from_ts=last_processed_t - LIQ_BACKFILL_LOOKBACK)
 
+    # 上位足トレンド方向は、今回取得した最新バーの時刻・終値を基準に1回だけ計算する
+    # (new_barsが複数本の巻き戻し処理でも、同一の基準値を全バーに適用する簡易実装)
+    latest_bar = new_bars[-1]
+    trend_directions = fetch_trend_directions(latest_bar["t"], latest_bar["c"])
+
     notified_any = False
 
     for bar in new_bars:
         state, record = step_psar(state, bar)
         record["recorded_at"] = datetime.now(timezone.utc).isoformat()
         record["interval"] = INTERVAL
+
+        for key, val in trend_directions.items():
+            if val is not None:
+                record[key] = val
 
         if liq_map is None:
             record["liq_long_bybit_approx"] = None
