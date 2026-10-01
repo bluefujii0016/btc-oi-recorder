@@ -75,6 +75,20 @@ STATE_PATH = "data/sar_state.json"
 LOG_PATH = "data/sar_log.jsonl"
 
 OHLCV_URL = "https://api.coinalyze.net/v1/ohlcv-history"
+
+# 15分足1本の秒数。Coinalyzeは取得時点で形成中の足を末尾に含めて返すため、
+# 「t + BAR_SECONDS + CONFIRM_GRACE_SECONDS <= 現在時刻」を満たす足だけを確定足として扱う。
+# (v2までは形成中の足を開始約30秒時点の値で確定扱いしていた不具合があった: 2026-10修正)
+# CONFIRM_GRACE_SECONDS は、足が閉じた直後にCoinalyze側の値が確定しきらない
+# 反映遅延がある場合のみ正の値にする(確認スクリプトで遅延が無ければ0のまま)。
+BAR_SECONDS = 900
+CONFIRM_GRACE_SECONDS = 0
+
+
+def confirmed_bars_only(bars, now=None):
+    if now is None:
+        now = int(time.time())
+    return [b for b in bars if b["t"] + BAR_SECONDS + CONFIRM_GRACE_SECONDS <= now]
 LIQUIDATION_URL = "https://api.coinalyze.net/v1/liquidation-history"
 
 
@@ -717,7 +731,7 @@ def main():
     # 初回起動(state.jsonがまだ存在しない、または旧形式の場合)
     # -------------------------------------------------------------
     if state is None or "prev1" not in state:
-        bars = fetch_ohlcv(from_ts=None)
+        bars = confirmed_bars_only(fetch_ohlcv(from_ts=None))
         state, last_record = bootstrap_psar(bars)
 
         liq_map = fetch_liquidations(from_ts=last_record["t"] - 1)
@@ -741,6 +755,7 @@ def main():
             "ep": last_record["ep"],
             "trend": last_record["trend"],
             "dots_since_flip": last_record["dots_since_flip"],
+            "bar_confirmed": True,
             "liq_long_bybit_approx": liq_long_usd,
             "liq_short_bybit_approx": liq_short_usd,
         }
@@ -756,7 +771,7 @@ def main():
     # -------------------------------------------------------------
     last_processed_t = state["last_processed_t"]
     bars = fetch_ohlcv(from_ts=last_processed_t)
-    new_bars = [b for b in bars if b["t"] > last_processed_t]
+    new_bars = [b for b in confirmed_bars_only(bars) if b["t"] > last_processed_t]
 
     if not new_bars:
         print("新規バーなし(前回実行から進捗なし)")
@@ -778,6 +793,7 @@ def main():
         state, record = step_psar(state, bar)
         record["recorded_at"] = datetime.now(timezone.utc).isoformat()
         record["interval"] = INTERVAL
+        record["bar_confirmed"] = True  # 確定足のみで計算した行の目印(修正前の行には無い)
 
         for key, val in trend_directions.items():
             if val is not None:
