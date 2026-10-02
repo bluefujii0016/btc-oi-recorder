@@ -1,0 +1,70 @@
+name: run-prereg-eval
+on:
+  workflow_dispatch:
+    inputs:
+      period:
+        description: "評価する期間(確認期間 confirm → 合格した場合のみ最終確認期間 final)"
+        required: true
+        type: choice
+        options: [confirm, final]
+      ack:
+        description: "事前登録をコミット済みで、この期間の評価は1回きりであることを確認したら YES と入力"
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 確認の入力チェック
+        if: ${{ inputs.ack != 'YES' }}
+        run: |
+          echo "ack に YES が入力されていないため中止しました"
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # 事前登録ファイルのコミット履歴を記録するため
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: ライブラリのインストール
+        run: pip install pandas numpy scipy
+      - name: 事前登録ファイルの確認
+        id: files
+        run: |
+          # prereg/ フォルダに置いた場合と、data/history/ 直下に置いた場合の両方に対応
+          for d in data/history/prereg data/history; do
+            if [ -f "$d/prereg_20261002_C_D.md" ] && [ -f "$d/eval_20261002_C_D.py" ]; then DIR=$d; break; fi
+          done
+          if [ -z "$DIR" ]; then echo "事前登録文書または評価用スクリプトが見つかりません"; exit 1; fi
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          # スクリプトが事前登録文書に書いたSHA-256と一致するか(登録後に書き換えられていないか)
+          ACTUAL=$(sha256sum "$DIR/eval_20261002_C_D.py" | cut -d' ' -f1)
+          if ! grep -q "$ACTUAL" "$DIR/prereg_20261002_C_D.md"; then
+            echo "スクリプトのSHA-256($ACTUAL)が事前登録文書の値と一致しません。中止します"; exit 1
+          fi
+          echo "スクリプトのSHA-256一致: $ACTUAL"
+      - name: 評価の実行
+        run: |
+          DIR=${{ steps.files.outputs.dir }}
+          OUT="$DIR/result_20261002_C_D_${{ inputs.period }}.txt"
+          if [ -f "$OUT" ]; then echo "$OUT が既にあります。この期間は評価済みのため中止します"; exit 1; fi
+          {
+            echo "実行日時(UTC): $(date -u '+%Y-%m-%d %H:%M:%S')"
+            echo "事前登録文書の最終コミット: $(git log -1 --format='%H %cd' --date=iso-strict -- $DIR/prereg_20261002_C_D.md)"
+            echo "評価用スクリプトの最終コミット: $(git log -1 --format='%H %cd' --date=iso-strict -- $DIR/eval_20261002_C_D.py)"
+            echo "評価用スクリプトのSHA-256: $(sha256sum $DIR/eval_20261002_C_D.py | cut -d' ' -f1)"
+            echo
+            python "$DIR/eval_20261002_C_D.py" --period ${{ inputs.period }} --i-have-committed
+          } 2>&1 | tee "$OUT"
+          test ${PIPESTATUS[0]} -eq 0
+      - name: 結果をコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/history/prereg/result_*.txt data/history/result_*.txt 2>/dev/null || true
+          git commit -m "prereg 20261002 C/D: ${{ inputs.period }} の評価結果" || echo "no changes"
+          git pull --rebase
+          git push
