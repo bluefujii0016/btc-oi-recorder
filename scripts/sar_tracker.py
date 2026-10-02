@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-sar_tracker.py (v2)
+sar_tracker.py (v3)
+
+v3(2026-10-02): 1時間足SARのトレンド・AFと、全体ロング/ショート比率(7日中央値比)を
+  ログに記録し、転換通知に参考値として表示するよう追加(判定は付けない)。
 
 Coinalyze の /ohlcv-history から BTCUSDT_PERP.A の15分足OHLCVを取得し、
 Wilder式 Parabolic SAR (AF初期値0.02 / 刻み0.02 / 上限0.20) を計算する。
@@ -161,6 +164,116 @@ def fetch_trend_directions(reference_t, reference_close, hours_list=TREND_WINDOW
             result[f"trend_{h}h"] = "up" if reference_close > best["c"] else "down"
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# 1時間足SAR・全体ロング/ショート比率(参考情報・Discord通知とログに値として記録)
+#
+# 2026-10-02の検証(探索期間)で候補として扱ったが、確認期間では効果が再現しなかった。
+# 判定(見送り/エントリー候補)は付けず、値だけを表示・記録する。
+# 記録した値は、前向きの検証(新しいデータ)に使う。
+# どちらもステートレス(毎回APIから取得して計算)。
+# ---------------------------------------------------------------------------
+SAR1H_LOOKBACK_SECONDS = 60 * 60 * 24 * 7   # 1時間足SARの計算に使う過去データ(7日)
+LS_URL = "https://api.coinalyze.net/v1/long-short-ratio-history"
+LS_MEDIAN_BARS = 672                         # 直近7日(15分足672本)の中央値と比べる
+
+
+def _wilder_series(highs, lows, af_start=AF_START, af_step=AF_STEP, af_max=AF_MAX):
+    """最後の足の確定時点のトレンド("up"/"down")とAFを返す(bootstrap_psarと同じ計算)"""
+    n = len(highs)
+    bull = highs[1] > highs[0]
+    ep = highs[0] if bull else lows[0]
+    sar = lows[0] if bull else highs[0]
+    af = af_start
+    for i in range(1, n):
+        sar = sar + af * (ep - sar)
+        if bull:
+            sar = min(sar, lows[i - 1], lows[max(i - 2, 0)])
+            if lows[i] < sar:
+                bull, sar, ep, af = False, ep, lows[i], af_start
+            elif highs[i] > ep:
+                ep, af = highs[i], min(af + af_step, af_max)
+        else:
+            sar = max(sar, highs[i - 1], highs[max(i - 2, 0)])
+            if highs[i] > sar:
+                bull, sar, ep, af = True, ep, highs[i], af_start
+            elif lows[i] < ep:
+                ep, af = lows[i], min(af + af_step, af_max)
+    return ("up" if bull else "down"), af
+
+
+def compute_sar_1h(bars_15m, reference_t):
+    """
+    15分足から1時間足(UTCの正時区切り)を組み立て、reference_tの足の確定時点で
+    「直前に確定した1時間足」のSARトレンドとAFを返す。
+    reference_tの足が正時の最後の足(:45開始)ならその1時間足、それ以外は1つ前の1時間足。
+    戻り値: {"sar1h_trend": "up"/"down"/None, "sar1h_af": float/None}
+    """
+    result = {"sar1h_trend": None, "sar1h_af": None}
+    last_hour = reference_t // 3600 * 3600 if reference_t % 3600 == 2700 else reference_t // 3600 * 3600 - 3600
+    hours = {}
+    for b in bars_15m:
+        if b["t"] > reference_t:
+            continue
+        h = b["t"] // 3600 * 3600
+        if h > last_hour:
+            continue
+        hb = hours.setdefault(h, {"h": b["h"], "l": b["l"], "n": 0})
+        hb["h"] = max(hb["h"], b["h"]); hb["l"] = min(hb["l"], b["l"]); hb["n"] += 1
+    keys = sorted(k for k, v in hours.items() if v["n"] == 4)   # 4本そろった1時間足だけを使う
+    if len(keys) < 24 or keys[-1] != last_hour:
+        return result
+    trend, af = _wilder_series([hours[k]["h"] for k in keys], [hours[k]["l"] for k in keys])
+    result["sar1h_trend"], result["sar1h_af"] = trend, round(af, 2)
+    return result
+
+
+def fetch_sar_1h(reference_t):
+    try:
+        bars = confirmed_bars_only(fetch_ohlcv(from_ts=reference_t - SAR1H_LOOKBACK_SECONDS))
+        return compute_sar_1h(bars, reference_t)
+    except Exception as e:
+        print(f"1時間足SARの計算に失敗(処理は継続): {e}", file=sys.stderr)
+        return {"sar1h_trend": None, "sar1h_af": None}
+
+
+def fetch_long_short(reference_t):
+    """
+    Coinalyzeから全体ロング/ショート比率(Binance BTCUSDT Perp、15分)を取得し、
+    reference_tの足の確定時刻以前の最新値と、直近7日の中央値からの乖離(自然対数)を返す。
+    戻り値: {"ls_ratio": float/None, "ls_dev_log": float/None}
+    """
+    import math
+    result = {"ls_ratio": None, "ls_dev_log": None}
+    try:
+        params = {"symbols": SYMBOL, "interval": INTERVAL,
+                  "from": reference_t - LS_MEDIAN_BARS * BAR_SECONDS - 3600, "to": reference_t + BAR_SECONDS}
+        resp = requests.get(LS_URL, params=params, headers={"api_key": COINALYZE_API_KEY}, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        hist = data[0]["history"] if data and "history" in data[0] else []
+        vals = []
+        for h in sorted(hist, key=lambda x: x["t"]):
+            if h["t"] > reference_t:          # 足の確定より後に出た値は使わない
+                continue
+            r = h.get("r")
+            if r is None and h.get("s"):
+                r = h.get("l", 0) / h["s"]
+            if r and r > 0:
+                vals.append(r)
+        if not vals:
+            return result
+        logs = sorted(math.log(v) for v in vals[-LS_MEDIAN_BARS:])
+        m = len(logs)
+        median = logs[m // 2] if m % 2 else (logs[m // 2 - 1] + logs[m // 2]) / 2
+        result["ls_ratio"] = round(vals[-1], 4)
+        if m >= 200:                          # 中央値の計算に十分な本数があるときだけ
+            result["ls_dev_log"] = round(math.log(vals[-1]) - median, 4)
+        return result
+    except Exception as e:
+        print(f"ロング/ショート比率の取得に失敗(処理は継続): {e}", file=sys.stderr)
+        return result
 
 
 def fetch_liquidations(from_ts):
@@ -643,6 +756,24 @@ def _format_trend_directions_line(record):
     return f"参考(上位足方向): {' / '.join(parts)}\n"
 
 
+def _format_context_line(record):
+    """1時間足SARと全体L/S比を、判定を付けずに値だけで表示する"""
+    import math
+    parts = []
+    tr, af = record.get("sar1h_trend"), record.get("sar1h_af")
+    if tr is not None:
+        parts.append(f"1h SAR={'上昇' if tr == 'up' else '下落'}(AF {af:.2f})")
+    r, dev = record.get("ls_ratio"), record.get("ls_dev_log")
+    if r is not None:
+        txt = f"全体L/S比={r:.2f}"
+        if dev is not None:
+            txt += f"(7日中央値比 {(math.exp(dev) - 1) * 100:+.1f}%)"
+        parts.append(txt)
+    if not parts:
+        return ""
+    return f"参考: {' / '.join(parts)}\n"
+
+
 def notify_discord(record):
     if not DISCORD_WEBHOOK_URL:
         print("DISCORD_WEBHOOK_URL未設定のため通知をスキップします", file=sys.stderr)
@@ -667,10 +798,12 @@ def notify_discord(record):
         )
 
     trend_line = _format_trend_directions_line(record)
+    context_line = _format_context_line(record)
 
     content = (
         f"**SAR転換検知(1点目)**\n"
         f"{trend_line}"
+        f"{context_line}"
         f"方向: {direction_jp}\n"
         f"時刻: {dt}\n"
         f"価格: {record['close']:.1f}\n"
@@ -786,6 +919,10 @@ def main():
     # (new_barsが複数本の巻き戻し処理でも、同一の基準値を全バーに適用する簡易実装)
     latest_bar = new_bars[-1]
     trend_directions = fetch_trend_directions(latest_bar["t"], latest_bar["c"])
+    # 1時間足SAR・全体L/S比も同様に、最新バー基準で1回だけ計算する
+    context_values = {}
+    context_values.update(fetch_sar_1h(latest_bar["t"]))
+    context_values.update(fetch_long_short(latest_bar["t"]))
 
     notified_any = False
 
@@ -796,6 +933,9 @@ def main():
         record["bar_confirmed"] = True  # 確定足のみで計算した行の目印(修正前の行には無い)
 
         for key, val in trend_directions.items():
+            if val is not None:
+                record[key] = val
+        for key, val in context_values.items():
             if val is not None:
                 record[key] = val
 
