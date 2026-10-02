@@ -1,0 +1,27 @@
+name: fetch-deriv-history
+on:
+  workflow_dispatch:      # 手動実行のみ(1回きりの取得用)
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch
+        env:
+          COINALYZE_API_KEY: ${{ secrets.COINALYZE_API_KEY }}
+        run: python scripts/fetch_deriv_history.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/history/deriv_metrics_BTCUSDT_5m.csv.gz data/history/funding_BTCUSDT.csv.gz data/history/deriv_manifest.json
+          git add data/history/liquidation_daily_BTCUSDT.csv 2>/dev/null || true
+          git commit -m "add derivative history (OI/LS/taker 5m, funding, daily liquidation)" || echo "no changes"
+          git pull --rebase
+          git push
