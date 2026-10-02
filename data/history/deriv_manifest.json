@@ -1,0 +1,27 @@
+{
+  "generated_utc": "2026-10-02 02:52:21",
+  "range": [
+    "2024-10-01",
+    "2026-09-30"
+  ],
+  "files": {
+    "metrics": {
+      "rows": 210235,
+      "missing": [],
+      "path": "data/history/deriv_metrics_BTCUSDT_5m.csv.gz",
+      "sha256": "a761bd7b75e42efb9f5ec89b567772ee6729a593efeb097338dcb58cc652923d"
+    },
+    "funding": {
+      "rows": 2190,
+      "missing": [],
+      "path": "data/history/funding_BTCUSDT.csv.gz",
+      "sha256": "91556ed8534112f540ea4a85bb3192f5e851cd7071df1d42e1b149b5888818e1"
+    },
+    "liquidation_daily": {
+      "rows": 730,
+      "missing": [],
+      "path": "data/history/liquidation_daily_BTCUSDT.csv",
+      "sha256": "1ef7ab9989f46f79e9d8a5fcc658d3a287c79075a11099a3a518501df94d8b5b"
+    }
+  }
+}
