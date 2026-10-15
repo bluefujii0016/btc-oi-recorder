@@ -1,0 +1,8 @@
+# 確認期間の評価結果(候補E・F)
+実行日時: 2026-10-15 12:47 UTC
+スクリプト: data/history/prereg/eval_20261015_E_F.py (SHA-256 3abf320889c62e3c131d79d0dd0cb9bb0b181803bd2b52f75e5174fc2cbdcb46、GitHub上のファイルと一致を確認)
+データ: sar_history_BTCUSDT_15m.csv.gz (SHA-256 4e229f64c26cd49a3c73a5648c36fca8ef399625d35177c27ff57a6558ac70f8)
+コマンド: python eval_20261015_E_F.py confirm(1回のみ実行)
+
+[confirm] 候補E: n=104 手数料後EV=+0.098% 前半+0.181% 後半+0.008% → 合格  (参考: 勝率0.40 日単位p=0.139 上位5件除外EV=-0.002% 平均SL幅0.57%)
+[confirm] 候補F: n=170 手数料後EV=-0.038% 前半-0.096% 後半+0.016% → 不合格  (参考: 勝率0.55 日単位p=0.747 上位5件除外EV=-0.085%)
