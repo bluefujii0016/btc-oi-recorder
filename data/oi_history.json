@@ -1,5 +1,12 @@
 [
   {
+    "ts": "2026-10-23T15:15:29.000Z",
+    "price": "81377",
+    "oi": "7.55",
+    "funding": "0.0071",
+    "source": "coinalyze-binance-auto"
+  },
+  {
     "ts": "2026-10-23T13:48:23.000Z",
     "price": "81893",
     "oi": "7.65",
@@ -1390,13 +1397,6 @@
     "price": "81222",
     "oi": "7.46",
     "funding": "0.0066",
-    "source": "coinalyze-binance-auto"
-  },
-  {
-    "ts": "2026-10-15T07:15:28.000Z",
-    "price": "80871",
-    "oi": "7.43",
-    "funding": "-0.0041",
     "source": "coinalyze-binance-auto"
   }
 ]
