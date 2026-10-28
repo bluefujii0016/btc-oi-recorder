@@ -1,0 +1,40 @@
+name: liqzone-backfill (backfill_once)
+
+# 清算帯推定 フェーズ1 ステップ2: 過去分のOI・5分足ローソクを公開データから取り込む。
+# 手動実行のみ。何度実行しても結果は同じ(取得済みの日は省略)。書き込み先は data/liqzone/ のみ。
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: liqzone-data
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Backfill from data.binance.vision
+        run: python3 scripts/liqzone_backfill.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name  "oi-recorder-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/liqzone
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "liqzone: backfill $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && break
+              echo "push失敗、再試行します ($i/3)"
+              sleep 5
+            done
+          fi
