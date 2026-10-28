@@ -237,6 +237,20 @@ def finish():
     if summary:
         with open(summary, "a", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
+    # ログを開けない環境(APIからだけ結果を読む場合)向けに、セクションごとに
+    # アノテーションとしても出す(1ステップ10件までの制限内に収める)。
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        groups, cur = [], []
+        for ln in lines:
+            if ln.startswith("## ") and cur:
+                groups.append(cur)
+                cur = []
+            cur.append(ln)
+        if cur:
+            groups.append(cur)
+        for i, g in enumerate(groups[:10], 1):
+            msg = "\n".join(g).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::notice title=probe {i}/{len(groups)}::{msg}", flush=True)
 
 
 if __name__ == "__main__":
