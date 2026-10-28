@@ -1,1 +1,2 @@
 {"ts": "2026-10-28T02:43:52Z", "job": "backfill_once", "oi_5m": {"rows": 218011, "from": 1727740800, "to": 1793154600, "missing_in_range": 36}, "ohlcv_5m": {"rows": 218016, "from": 1727740800, "to": 1793154600, "missing_in_range": 31}}
+{"ts": "2026-10-28T04:03:58Z", "job": "reconcile_daily", "days": [], "unpublished": ["2026-10-27 metrics", "2026-10-27 klines"]}
