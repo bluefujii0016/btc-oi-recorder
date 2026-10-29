@@ -1,0 +1,21 @@
+{
+ "bin_usd": 25.0,
+ "tiers": {
+  "10": 0.2,
+  "25": 0.3,
+  "50": 0.3,
+  "100": 0.2
+ },
+ "mmr": 0.005,
+ "halflife_days": 14.0,
+ "split": "taker",
+ "smooth_bins": 4,
+ "range_pct": 5.0,
+ "top_k": 5,
+ "min_strength_frac": 0.003,
+ "sep_bins": 20,
+ "refresh_bars": 12,
+ "touch_delta_pct": 0.1,
+ "cooldown_bars": 288,
+ "warmup_days": 30
+}
