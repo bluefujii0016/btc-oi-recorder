@@ -1,0 +1,5 @@
+{"captured_jst": "2026-09-26 06:03", "captured_utc": "2026-09-25 21:03", "source": "CoinGlass Liquidation Heatmap, Model 1, Liquidity Threshold 0.90, Binance BTCUSDT, 24h",
+ "price_at_capture_data_close": 83840,
+ "yellow_lines": [82751, 83191, 84420, 84874, 85258, 85450, 85712],
+ "estimate_top_above": [[85312, 1.0], [86938, 0.96], [87462, 0.61]], "estimate_top_below": [[81062, 0.93], [82738, 0.91], [81662, 0.56]],
+ "note": "user-provided past screenshot; use for location calibration only (period overlaps the already-seen reference period)"}
