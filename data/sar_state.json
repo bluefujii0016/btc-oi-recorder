@@ -1,30 +1,24 @@
 {
-  "bull": true,
-  "af": 0.08,
-  "ep": 80497.7,
-  "sar": 79966.2,
+  "bull": false,
+  "af": 0.02,
+  "ep": 79865,
+  "sar": 80497.7,
   "prev1": {
+    "t": 1793256300,
+    "h": 79977.3,
+    "l": 79865
+  },
+  "prev2": {
     "t": 1793255400,
     "h": 80113.2,
     "l": 79970.1
   },
-  "prev2": {
-    "t": 1793254500,
-    "h": 80132.6,
-    "l": 79966.2
-  },
-  "dots_since_flip": 9,
-  "last_processed_t": 1793255400,
-  "last_notified_flip_t": 1793248200,
-  "approach_notified": true,
-  "prev_distance_pct": 0.009878198066634985,
+  "dots_since_flip": 1,
+  "last_processed_t": 1793256300,
+  "last_notified_flip_t": 1793256300,
+  "approach_notified": false,
+  "prev_distance_pct": null,
   "recent_bars": [
-    {
-      "o": 79849.1,
-      "h": 79869.7,
-      "l": 79774.5,
-      "c": 79814.1
-    },
     {
       "o": 79814.1,
       "h": 79843.4,
@@ -90,6 +84,12 @@
       "h": 80113.2,
       "l": 79970.1,
       "c": 79974.1
+    },
+    {
+      "o": 79974.2,
+      "h": 79977.3,
+      "l": 79865,
+      "c": 79936.6
     }
   ]
 }
