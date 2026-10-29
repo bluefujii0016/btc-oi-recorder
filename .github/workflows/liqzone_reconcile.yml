@@ -23,9 +23,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Reconcile with data.binance.vision
+        id: reconcile
         run: python3 scripts/liqzone_reconcile.py
 
+      # 収集が止まっていないかを毎日確認する(収集ジョブ自体が動いていない場合の見張り)
+      - name: Check data health and notify
+        if: always()
+        env:
+          LIQZONE_DISCORD_WEBHOOK_URL: ${{ secrets.LIQZONE_DISCORD_WEBHOOK_URL }}
+        run: python3 scripts/liqzone_check.py
+
       - name: Commit and push if changed
+        if: always()
         run: |
           git config user.name  "oi-recorder-bot"
           git config user.email "actions@users.noreply.github.com"

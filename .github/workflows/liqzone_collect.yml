@@ -24,11 +24,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Collect 5m bars (24h overlap)
+        id: collect
         env:
           COINALYZE_API_KEY: ${{ secrets.COINALYZE_API_KEY }}
         run: python3 scripts/liqzone_collect.py
 
+      # 欠損・停止の検知と Discord 通知(収集が失敗しても必ず実行する)
+      - name: Check data health and notify
+        if: always()
+        env:
+          LIQZONE_DISCORD_WEBHOOK_URL: ${{ secrets.LIQZONE_DISCORD_WEBHOOK_URL }}
+          COLLECT_OUTCOME: ${{ steps.collect.outcome }}
+        run: python3 scripts/liqzone_check.py
+
       - name: Commit and push if changed
+        if: always()
         run: |
           git config user.name  "oi-recorder-bot"
           git config user.email "actions@users.noreply.github.com"
