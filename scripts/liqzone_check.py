@@ -79,7 +79,19 @@ def post(text):
     urllib.request.urlopen(req, timeout=30).read()
 
 
+def send_test():
+    """LIQZONE_TEST=1: 疎通確認用。固定のテスト文を1通送るだけで、状態もログも書かない。"""
+    if not WEBHOOK:
+        print("LIQZONE_DISCORD_WEBHOOK_URL が未設定です")
+        return 1
+    post("🧪 清算帯データ収集: Discord 通知のテストです(異常ではありません)")
+    print("テスト通知を送信しました")
+    return 0
+
+
 def main():
+    if os.environ.get("LIQZONE_TEST") == "1":
+        return send_test()
     now = int(time.time())
     qdir = os.path.join(ROOT, "quality")
     os.makedirs(qdir, exist_ok=True)

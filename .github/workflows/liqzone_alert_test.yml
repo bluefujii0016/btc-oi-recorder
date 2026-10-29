@@ -1,0 +1,21 @@
+name: liqzone-alert-test
+
+# Discord 通知の疎通確認。手動実行のみ。テスト文を1通送るだけで、リポジトリには何も書き込まない。
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Send test notification
+        env:
+          LIQZONE_TEST: '1'
+          LIQZONE_DISCORD_WEBHOOK_URL: ${{ secrets.LIQZONE_DISCORD_WEBHOOK_URL }}
+        run: python3 scripts/liqzone_check.py
