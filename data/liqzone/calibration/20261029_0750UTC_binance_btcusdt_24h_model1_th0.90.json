@@ -1,0 +1,4 @@
+{"captured_jst": "2026-10-29 16:50", "captured_utc": "2026-10-29 07:50", "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90 (Model 1)",
+ "price_at_capture_data_close": 79884,
+ "yellow_lines": [82269, 81456, 80760, 79832, 79145, 79019],
+ "note": "Same market state as the 15:39 JST capture 71 minutes earlier (lines identical within ~25 USD). Not an independent sample; counts as the same sample in aggregate stats. Shows pixel-reading repeatability of about +-25 USD."}
