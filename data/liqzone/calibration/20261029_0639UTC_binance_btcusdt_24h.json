@@ -1,0 +1,21 @@
+{
+  "captured_utc": "2026-10-29 06:39",
+  "captured_jst": "2026-10-29 15:39",
+  "source": "CoinGlass Liq Map (heatmap), Binance BTCUSDT, 24h (user screenshot)",
+  "price_axis_fit": "price = -9.621 * y_px + 88079.6 (residual < 8 USD on 7 labels)",
+  "price_at_capture_approx": 80085,
+  "yellow_lines_read_from_pixels": [
+    {"price": 82283, "x_range_px": [220, 669], "status": "alive (above price)", "note": "spans the whole 24h"},
+    {"price": 81475, "x_range_px": [220, 387], "status": "consumed", "note": "price spiked to ~81800 (+0.4%) and reversed down"},
+    {"price": 80782, "x_range_px": [574, 669], "status": "alive (above price)", "note": "formed in the last ~3.6h"},
+    {"price": 79858, "x_range_px": [230, 565], "status": "consumed", "note": "price dipped to ~79670 (-0.24%) then rebounded to ~80600"},
+    {"price": 79166, "x_range_px": [574, 669], "status": "alive (below price)", "note": "formed recently"},
+    {"price": 79050, "x_range_px": [588, 669], "status": "alive (below price)", "note": "formed recently"}
+  ],
+  "yellow_green_line": {"price": 81940, "status": "alive (above price)"},
+  "estimate_at_same_time": {
+    "above": [[82762, 0.92], [81938, 0.80], [83438, 0.53]],
+    "below": [[79412, 1.00], [78688, 0.88], [77788, 0.65]],
+    "note": "relative strength vs max in +-5% range; v1 24h-window estimator (liqzone_v2.smoothed_map)"
+  }
+}
