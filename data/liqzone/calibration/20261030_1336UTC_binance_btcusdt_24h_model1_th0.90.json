@@ -1,0 +1,29 @@
+{
+  "captured_jst": "2026-10-30 22:36", "captured_utc": "2026-10-30 13:36",
+  "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90 (Model 1) (user screenshot, phone)",
+  "price_axis_fit": "price = -12.609 * y_px + 89586.2 (residual < 11 USD on 7 labels)",
+  "price_at_capture_data_close": 77212,
+  "time_check": "Chart window high/low read from pixels 81983/76473 matches the data 24h to 13:35 UTC (81954/76444), not the 24h to 21:35 UTC (79527/76270). So this chart is as of ~13:36 UTC.",
+  "duplicate_screenshot": "A second screenshot with phone clock 06:37 JST 10/31 (21:37 UTC 10/30) has 0 differing pixels in the chart area: the page was not refreshed, so it shows this same 13:36 UTC state. It is NOT a separate sample and is not stored.",
+  "yellow_lines_read_from_pixels": [
+    {"price": 78824, "x_range_px": [372, 475], "status": "consumed (price rallied through to ~78,9xx)"},
+    {"price": 78673, "x_range_px": [400, 455], "status": "consumed (same rally)"},
+    {"price": 77198, "x_range_px": [400, 665], "status": "alive, at price (last candle falling onto it)"},
+    {"price": 76958, "x_range_px": [554, 669], "status": "alive (below price)"},
+    {"price": 76202, "x_range_px": [608, 669], "status": "alive (below price), formed recently"},
+    {"price": 76044, "x_range_px": [568, 669], "status": "alive (below price)"}
+  ],
+  "estimate_at_same_time": {
+    "above": [[80038, 0.88], [79262, 0.88], [80762, 0.86]],
+    "below": [[75288, 1.0], [76088, 0.91], [76838, 0.76]],
+    "note": "v1 24h-window estimator (liqzone_v2.smoothed_map), data up to 13:30 UTC"
+  },
+  "calibration_alive_yellow_strength_within_300usd": {"lines": {"77198": 0.33, "76958": 0.76, "76202": 0.91, "76044": 0.91}, "random_below_price_median": 0.76},
+  "event_context": {"tag": "post_event_day2", "summary": "About 17h after the suspected Binance hot-wallet hack began (2026-10-29 ~20:20 UTC). Still a stressed market; downtrend since the hack."},
+  "reaction_after_capture_data": {
+    "note": "From collected 5m data (not the screenshot). One event; observation only.",
+    "path": "13:35 UTC bar touched 77,198 and 76,958; low 76,600 within 3h (about 0.8% past 77,198, 0.5% past 76,958); then high 78,081 at 15:15 UTC (+1.9% from the low); later low 76,270 at 18:50 UTC.",
+    "closes": {"1h": 76788, "2h": 77387, "4h": 77214, "8h": 76828}
+  },
+  "note": "Location calibration only. Not independent of the 10-30 01:06 UTC sample (24h windows overlap by about 11h). Not for reaction-probability stats."
+}
