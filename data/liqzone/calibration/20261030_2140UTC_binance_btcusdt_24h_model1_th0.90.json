@@ -1,0 +1,24 @@
+{
+  "captured_jst": "2026-10-31 06:40", "captured_utc": "2026-10-30 21:40",
+  "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90 (Model 1) (user screenshot, phone, refreshed)",
+  "price_axis_fit": "price = -10.081 * y_px + 86134.5 (residual < 9 USD on 7 labels)",
+  "price_at_capture_data_close": 76828,
+  "time_check": "Chart window high/low read from pixels 79572/76275 matches the data 24h to 21:35 UTC (79527/76270). Fresh capture (the user pressed refresh).",
+  "yellow_lines_read_from_pixels": [
+    {"price": 78740, "x_range_px": [162, 265], "status": "consumed (rally)"},
+    {"price": 78508, "x_range_px": [188, 231], "status": "consumed (rally)"},
+    {"price": 77157, "x_range_px": [190, 453], "status": "consumed (price dropped through at x~455)"},
+    {"price": 76956, "x_range_px": [188, 459], "status": "consumed (same drop)"},
+    {"price": 76512, "x_range_px": [446, 591], "status": "consumed (drop to 76,275 at x~595)"},
+    {"price": 76169, "x_range_px": [396, 665], "status": "alive (below price)"},
+    {"price": 76038, "x_range_px": [356, 665], "status": "alive (below price)"}
+  ],
+  "estimate_at_same_time": {
+    "above": [[79512, 1.0], [80038, 0.73], [78888, 0.53]],
+    "below": [[75288, 0.99], [76088, 0.93], [74438, 0.59]],
+    "note": "v1 24h-window estimator (liqzone_v2.smoothed_map), data up to 21:30 UTC"
+  },
+  "calibration_alive_yellow_strength_within_300usd": {"lines": {"76169": 0.93, "76038": 0.93}, "random_below_price_median": 0.59},
+  "event_context": {"tag": "post_event_day2", "summary": "About 25h after the suspected Binance hot-wallet hack began (2026-10-29 ~20:20 UTC). Downtrend, low 76,270 at 18:50 UTC."},
+  "note": "Location calibration only. Not independent of the 10-30 13:36 UTC sample (24h windows overlap by about 16h). Not for reaction-probability stats."
+}
