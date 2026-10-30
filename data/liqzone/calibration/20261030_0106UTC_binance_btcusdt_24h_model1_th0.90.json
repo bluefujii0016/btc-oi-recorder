@@ -1,0 +1,26 @@
+{
+  "captured_jst": "2026-10-30 10:06", "captured_utc": "2026-10-30 01:06",
+  "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90 (Model 1) (user screenshot, phone)",
+  "price_axis_fit": "price = -11.141 * y_px + 88920.0 (residual < 4 USD on 7 labels)",
+  "price_at_capture_data_close": 77166,
+  "price_note": "last data bar 00:30 UTC (close 77166, low 76717); chart wick low ~76765; chart high in window ~81970. Strong downtrend day (about -3.8% from the 10-29 07:50 UTC sample)",
+  "yellow_lines_read_from_pixels": [
+    {"price": 81483, "x_range_px": [528, 669], "status": "alive (above price)"},
+    {"price": 79924, "x_range_px": [528, 669], "status": "alive (above price)"},
+    {"price": 78865, "x_range_px": [628, 669], "status": "alive (above price)", "note": "formed in the last ~1h"},
+    {"price": 81038, "x_range_px": [354, 391], "status": "consumed (price rallied through at x~390)"},
+    {"price": 80659, "x_range_px": [212, 389], "status": "consumed (same rally)"},
+    {"price": 79333, "x_range_px": [346, 549], "status": "consumed (crossed by one fast red candle at x~549, no reversal at the line)"},
+    {"price": 79177, "x_range_px": [86, 549], "status": "consumed (same candle)"},
+    {"price": 79044, "x_range_px": [102, 549], "status": "consumed (same candle; seen only with a looser colour threshold)"},
+    {"price": 78297, "x_range_px": [550, 631], "status": "consumed (price dropped through at x~631)"}
+  ],
+  "no_yellow_below_price": true,
+  "estimate_at_same_time": {
+    "above": [[79212, 1.0], [80812, 0.92], [78412, 0.56]],
+    "below": [[75288, 0.84], [76062, 0.55], [76612, 0.19]],
+    "note": "v1 24h-window estimator (liqzone_v2.smoothed_map), data up to 00:30 UTC. relative strength vs max in +-5% range"
+  },
+  "calibration_alive_yellow_strength_within_300usd": {"lines": {"81483": 0.79, "79924": 0.55, "78865": 0.85}, "random_above_price_median": 0.56},
+  "note": "Different market state from the earlier samples (fast downtrend). Alive lines only counted for calibration (consumed lines are not in a 24h-window estimate as of now). 24h window partly overlaps the 10-29 samples, so only partly independent. Location calibration only; not for reaction-probability stats."
+}
