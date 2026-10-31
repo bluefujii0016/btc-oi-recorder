@@ -1,0 +1,107 @@
+{
+ "captured_jst": "2026-10-31 10:30",
+ "captured_utc": "2026-10-31 01:30",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone, refreshed). The page layout has an extra Pair/Currency + Model row, so the plot starts lower than in earlier screenshots.",
+ "price_axis_fit": "price = -9.235 * y_px + 85893.2 (residual < 7 USD on 6 labels)",
+ "price_at_capture_data_close": 77298,
+ "price_note": "last collected data bar is 00:30 UTC (1h before the capture); chart's last candles read 77,400-77,630",
+ "time_check": "Chart high/low read from pixels 78791/76307 matches data 24h to 01:30 UTC (78777/76270). Fresh capture.",
+ "pattern": "no yellow line above price (only blue/teal lines above); yellow lines only below",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 76182,
+   "x_range_px": [
+    356,
+    669
+   ],
+   "status": "alive (below price)"
+  },
+  {
+   "price": 76062,
+   "x_range_px": [
+    370,
+    669
+   ],
+   "status": "alive (below price)"
+  },
+  {
+   "price": 76986,
+   "x_range_px": [
+    298,
+    361
+   ],
+   "status": "consumed (price dropped through at x~360)"
+  }
+ ],
+ "yellow_green_lines_looser_threshold": [
+  {
+   "price": 78722,
+   "x_range_px": [
+    90,
+    145
+   ],
+   "status": "consumed (rally)"
+  },
+  {
+   "price": 78537,
+   "x_range_px": [
+    88,
+    133
+   ],
+   "status": "consumed (rally)"
+  },
+  {
+   "price": 77171,
+   "x_range_px": [
+    90,
+    355
+   ],
+   "status": "consumed (same drop as 76,986)"
+  }
+ ],
+ "estimate_at_same_time": {
+  "above": [
+   [
+    79538,
+    0.94
+   ],
+   [
+    78788,
+    0.42
+   ],
+   [
+    80062,
+    0.42
+   ]
+  ],
+  "below": [
+   [
+    75712,
+    1.0
+   ],
+   [
+    74162,
+    0.81
+   ],
+   [
+    75088,
+    0.48
+   ]
+  ],
+  "above_max_over_below_max": 0.94,
+  "note": "v1 24h-window estimator, data up to 00:30 UTC"
+ },
+ "calibration_alive_yellow_strength_within_300usd": {
+  "lines": {
+   "76182": 0.65,
+   "76062": 0.81
+  },
+  "random_below_price_median": 0.65
+ },
+ "calibration_side_check": "CoinGlass has no yellow above price; the estimate has an above-price peak of relative strength 0.94 (79,538), so it does not reproduce the one-sided pattern.",
+ "event_context": {
+  "tag": "post_event_day3",
+  "summary": "About 29h after the suspected Binance hot-wallet hack began (2026-10-29 ~20:20 UTC). Partial rebound from the 76,270 low."
+ },
+ "note": "Location calibration only. Overlaps the 10-30 21:40 UTC sample (24h windows overlap by about 20h), so it is nearly the same sample for aggregates."
+}
