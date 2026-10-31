@@ -1,0 +1,84 @@
+{
+ "captured_jst": "2026-10-31 22:32",
+ "captured_utc": "2026-10-31 13:32",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Same extra Pair/Currency + Model row as the 10-31 01:30 UTC screenshot.",
+ "price_axis_fit": "price = -8.372 * y_px + 84836.8 (residual < 4 USD on 6 labels)",
+ "price_at_capture_data_close": 77528,
+ "price_note": "last collected data bar is 12:50 UTC (about 40 min before the capture); chart's last candles read about 77,540. 24h range from the data: 76,270-78,081 (2.3%), a quieter day than the earlier samples.",
+ "time_check": "Chart high read from pixels 78089 matches the data 24h high 78081. The pixel low is not reliable here because a lime liquidation bar was picked up as candle colour; the candle low looks like about 76,3xx, consistent with the data low 76,270.",
+ "refresh_unverified_note": "The user did not say whether refresh was pressed, but the high and the last candle match the data of this time.",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 78269,
+   "x_range_px": [
+    524,
+    669
+   ],
+   "status": "alive (above price, about +1.0%)",
+   "note": "the line itself spans x 332-669; its right part is yellow, left part green"
+  },
+  {
+   "price": 77976,
+   "x_range_px": [
+    36,
+    83
+   ],
+   "status": "consumed (price spiked to ~78,090 at x~85)"
+  }
+ ],
+ "yellow_green_lines": [
+  {
+   "price": 76009,
+   "x_range_px": [
+    332,
+    669
+   ],
+   "status": "alive (below price, about -1.9%)",
+   "note": "bright lime, not full yellow; the strongest line below"
+  }
+ ],
+ "estimate_at_same_time": {
+  "above": [
+   [
+    77862,
+    0.62
+   ],
+   [
+    78538,
+    0.56
+   ],
+   [
+    80162,
+    0.56
+   ]
+  ],
+  "below": [
+   [
+    76212,
+    1.0
+   ],
+   [
+    74738,
+    0.91
+   ],
+   [
+    74162,
+    0.6
+   ]
+  ],
+  "above_max_over_below_max": 0.62,
+  "note": "v1 24h-window estimator, data up to 12:50 UTC"
+ },
+ "calibration_alive_strength_within_300usd": {
+  "yellow_78269_above": 0.56,
+  "lime_76009_below": 1.0,
+  "random_above_median": 0.56,
+  "random_below_median": 0.62
+ },
+ "calibration_location": "nearest estimated peaks: above 78,538 (about 270 USD from the yellow line); below 76,212 (about 200 USD from the lime line). The estimator's top below is the same area as CoinGlass's strongest below.",
+ "event_context": {
+  "tag": "post_event_quieter",
+  "summary": "About 41h after the suspected Binance hot-wallet hack began (2026-10-29 ~20:20 UTC). The 24h range is 2.3%, quieter than the earlier samples, and the market is in a rebound/range."
+ },
+ "note": "First quieter-day sample. Not independent of the 10-31 01:30 UTC sample (24h windows overlap by about 12h). Location calibration only."
+}
