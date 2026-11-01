@@ -1,0 +1,89 @@
+{
+ "captured_jst": "2026-11-01 11:54",
+ "captured_utc": "2026-11-01 02:54",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Layout with the 'Liquidation Heatmap / Liq Map' row (plot starts at y=538).",
+ "price_axis_fit": "price = -7.652 * y_px + 85131.1 (residual < 5 USD on 5 labels), read with scripts/liqzone_readimg.py",
+ "price_at_capture_data_close": 77670,
+ "time_check": "Candles span about 77,1xx-77,86x on the chart, matching the data 24h range 77,060-77,868; last close 77,670 matches the last candle. Data last bar 02:30 UTC (24 min before the capture).",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 78508,
+   "x_range_px": [
+    644,
+    669
+   ],
+   "status": "alive (above price, about +1.1%)",
+   "note": "marginal: short right-edge segment, width 26 px"
+  },
+  {
+   "price": 78393,
+   "x_range_px": [
+    546,
+    669
+   ],
+   "status": "alive (above price, about +0.9%)"
+  },
+  {
+   "price": 78171,
+   "x_range_px": [
+    352,
+    669
+   ],
+   "status": "alive (above price, about +0.6%)",
+   "note": "the line spans x 146-669; left part green, right part yellow"
+  },
+  {
+   "price": 76878,
+   "x_range_px": [
+    546,
+    669
+   ],
+   "status": "alive (below price, about -1.0%)"
+  },
+  {
+   "price": 76664,
+   "x_range_px": [
+    350,
+    669
+   ],
+   "status": "alive (below price, about -1.3%)",
+   "note": "line spans x 146-669; left part green"
+  }
+ ],
+ "estimate_at_same_time": {
+  "above": [
+   [
+    78638,
+    0.77
+   ],
+   [
+    80188,
+    0.77
+   ],
+   [
+    77988,
+    0.45
+   ]
+  ],
+  "below": [
+   [
+    74762,
+    1.0
+   ],
+   [
+    76312,
+    0.98
+   ],
+   [
+    77088,
+    0.66
+   ]
+  ],
+  "note": "v1 24h-window estimator, data up to 02:30 UTC"
+ },
+ "event_context": {
+  "tag": "post_event_quiet",
+  "summary": "About 54h after the suspected Binance hot-wallet hack began (2026-10-29 ~20:20 UTC). Quiet range (24h range about 1.0%)."
+ },
+ "note": "Pairs of yellow lines on both sides at about +-1%. Overlaps the 10-31 22:55 UTC sample (20h) and the 13:32 UTC sample (13h). Location calibration only."
+}

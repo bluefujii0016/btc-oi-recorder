@@ -1,14 +1,138 @@
 {
  "_doc": "CoinGlass yellow-line targets for estimator calibration. alive = lines still present at the capture time (the only ones a capture-time estimate can match). lime = bright yellow-green lines, kept separate (not counted as yellow). group = same-market-day cluster (24h windows overlap) used as the unit for cross-validation. Values were read from pixels with a repeatability of about +-25 USD. 07:50 UTC 10-29 is a duplicate of 06:39 UTC and is excluded.",
  "samples": [
-  {"id":"20260925_2103","capture_utc":"2026-09-25 21:03","group":"A","alive":[82751,83191,84420,84874,85258,85450,85712],"lime":[],"note":"status of each line not recorded in the first reading; all treated as alive (lines lie on both sides of the price 83,840)"},
-  {"id":"20261003_1210","capture_utc":"2026-10-03 12:10","group":"B","alive":[83474,83615,84609,85255,86298],"lime":[],"note":"same note as above (price 84,645)"},
-  {"id":"20261029_0639","capture_utc":"2026-10-29 06:39","group":"C","alive":[82283,80782,79166,79050],"lime":[81940]},
-  {"id":"20261030_0106","capture_utc":"2026-10-30 01:06","group":"D","alive":[81483,79924,78865],"lime":[],"tag":"event_driven"},
-  {"id":"20261030_1336","capture_utc":"2026-10-30 13:36","group":"D","alive":[77198,76958,76202,76044],"lime":[],"tag":"post_event"},
-  {"id":"20261030_2140","capture_utc":"2026-10-30 21:40","group":"D","alive":[76169,76038],"lime":[],"tag":"post_event"},
-  {"id":"20261031_0130","capture_utc":"2026-10-31 01:30","group":"E","alive":[76182,76062],"lime":[],"tag":"post_event"},
-  {"id":"20261031_1332","capture_utc":"2026-10-31 13:32","group":"E","alive":[78269],"lime":[76009],"tag":"post_event_quieter"},
-  {"id":"20261031_2255","capture_utc":"2026-10-31 22:55","group":"E","alive":[78295,76817,76705],"lime":[77757,76222],"tag":"post_event_quiet"}
+  {
+   "id": "20260925_2103",
+   "capture_utc": "2026-09-25 21:03",
+   "group": "A",
+   "alive": [
+    82751,
+    83191,
+    84420,
+    84874,
+    85258,
+    85450,
+    85712
+   ],
+   "lime": [],
+   "note": "status of each line not recorded in the first reading; all treated as alive (lines lie on both sides of the price 83,840)"
+  },
+  {
+   "id": "20261003_1210",
+   "capture_utc": "2026-10-03 12:10",
+   "group": "B",
+   "alive": [
+    83474,
+    83615,
+    84609,
+    85255,
+    86298
+   ],
+   "lime": [],
+   "note": "same note as above (price 84,645)"
+  },
+  {
+   "id": "20261029_0639",
+   "capture_utc": "2026-10-29 06:39",
+   "group": "C",
+   "alive": [
+    82283,
+    80782,
+    79166,
+    79050
+   ],
+   "lime": [
+    81940
+   ]
+  },
+  {
+   "id": "20261030_0106",
+   "capture_utc": "2026-10-30 01:06",
+   "group": "D",
+   "alive": [
+    81483,
+    79924,
+    78865
+   ],
+   "lime": [],
+   "tag": "event_driven"
+  },
+  {
+   "id": "20261030_1336",
+   "capture_utc": "2026-10-30 13:36",
+   "group": "D",
+   "alive": [
+    77198,
+    76958,
+    76202,
+    76044
+   ],
+   "lime": [],
+   "tag": "post_event"
+  },
+  {
+   "id": "20261030_2140",
+   "capture_utc": "2026-10-30 21:40",
+   "group": "D",
+   "alive": [
+    76169,
+    76038
+   ],
+   "lime": [],
+   "tag": "post_event"
+  },
+  {
+   "id": "20261031_0130",
+   "capture_utc": "2026-10-31 01:30",
+   "group": "E",
+   "alive": [
+    76182,
+    76062
+   ],
+   "lime": [],
+   "tag": "post_event"
+  },
+  {
+   "id": "20261031_1332",
+   "capture_utc": "2026-10-31 13:32",
+   "group": "E",
+   "alive": [
+    78269
+   ],
+   "lime": [
+    76009
+   ],
+   "tag": "post_event_quieter"
+  },
+  {
+   "id": "20261031_2255",
+   "capture_utc": "2026-10-31 22:55",
+   "group": "E",
+   "alive": [
+    78295,
+    76817,
+    76705
+   ],
+   "lime": [
+    77757,
+    76222
+   ],
+   "tag": "post_event_quiet"
+  },
+  {
+   "id": "20261101_0254",
+   "capture_utc": "2026-11-01 02:54",
+   "group": "F",
+   "alive": [
+    78508,
+    78393,
+    78171,
+    76878,
+    76664
+   ],
+   "lime": [],
+   "tag": "post_event_quiet",
+   "note": "78508 is a short right-edge segment (width 26 px, marginal). Added before any tuning run, so it belongs to the tuning set. Its 24h window overlaps group E samples by 13-20h (grouped by UTC day)."
+  }
  ]
 }
