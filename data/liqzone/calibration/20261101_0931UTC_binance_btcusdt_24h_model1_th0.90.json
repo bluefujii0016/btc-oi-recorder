@@ -1,0 +1,90 @@
+{
+ "captured_jst": "2026-11-01 18:31",
+ "captured_utc": "2026-11-01 09:31",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone, 4G). Layout with the 'Liquidation Heatmap / Liq Map' row (plot starts at y=538).",
+ "price_axis_fit": "price = -8.139 * y_px + 85851.5 (residual < 7 USD on 5 labels), read with scripts/liqzone_readimg.py",
+ "price_at_capture_data_close": 78058,
+ "price_note": "last collected data bar is 08:30 UTC (1h before the capture). The chart shows a rise to about 78,2xx and a drop in the last candles after that bar.",
+ "time_check": "Plausible: chart candles span about 77,4xx-78,2xx; the data (to 08:30 UTC) 24h range is 77,232-78,078 and the price rose after that bar. Not an exact match because of the 1h data lag.",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 78758,
+   "x_range_px": [
+    590,
+    665
+   ],
+   "status": "alive (above price, about +0.9%)",
+   "note": "short right-edge segment, width 76 px"
+  },
+  {
+   "price": 78481,
+   "x_range_px": [
+    468,
+    665
+   ],
+   "status": "alive (above price, about +0.5%)"
+  },
+  {
+   "price": 78375,
+   "x_range_px": [
+    370,
+    665
+   ],
+   "status": "alive (above price, about +0.4%)",
+   "note": "line spans x 358-665; the yellow-green pass reads it at 78,432"
+  },
+  {
+   "price": 77212,
+   "x_range_px": [
+    590,
+    665
+   ],
+   "status": "alive (below price, about -1.1%)",
+   "note": "short right-edge segment"
+  },
+  {
+   "price": 76878,
+   "x_range_px": [
+    370,
+    665
+   ],
+   "status": "alive (below price, about -1.5%)"
+  }
+ ],
+ "estimate_at_same_time": {
+  "above": [
+   [
+    78788,
+    0.78
+   ],
+   [
+    80338,
+    0.78
+   ],
+   [
+    78262,
+    0.32
+   ]
+  ],
+  "below": [
+   [
+    76488,
+    1.0
+   ],
+   [
+    74938,
+    1.0
+   ],
+   [
+    77262,
+    0.65
+   ]
+  ],
+  "note": "v1 24h-window estimator, data up to 08:30 UTC"
+ },
+ "event_context": {
+  "tag": "post_event_quiet",
+  "summary": "About 61h after the suspected Binance hot-wallet hack began (2026-10-29 ~20:20 UTC). Quiet, slowly rising range."
+ },
+ "note": "Overlaps the 11-01 02:54 UTC sample (17h). Location calibration only."
+}

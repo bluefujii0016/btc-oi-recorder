@@ -133,6 +133,21 @@
    "lime": [],
    "tag": "post_event_quiet",
    "note": "78508 is a short right-edge segment (width 26 px, marginal). Added before any tuning run, so it belongs to the tuning set. Its 24h window overlaps group E samples by 13-20h (grouped by UTC day)."
+  },
+  {
+   "id": "20261101_0931",
+   "capture_utc": "2026-11-01 09:31",
+   "group": "F",
+   "alive": [
+    78758,
+    78481,
+    78375,
+    77212,
+    76878
+   ],
+   "lime": [],
+   "tag": "post_event_quiet",
+   "note": "Added before any tuning run (tuning set). The 24h window overlaps the 02:54 UTC sample by 17h. Collected data lagged 1h (last bar 08:30 UTC)."
   }
  ]
 }
