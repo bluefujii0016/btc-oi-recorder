@@ -1,0 +1,95 @@
+{
+ "captured_jst": "2026-11-03 08:49",
+ "captured_utc": "2026-11-02 23:49",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Layout with the Pair/Currency + Model row (plot starts at y=455).",
+ "price_axis_fit": "price = -9.399 * y_px + 86326.9 (residual < 9 USD on 6 labels), read with scripts/liqzone_readimg.py",
+ "price_at_capture_data_close": 76799,
+ "time_check": "Candles span about 76,69x-78,84x on the chart, matching the data 24h range 76,668-78,854; last close 76,799 matches the last candle. Data last bar 23:30 UTC (19 min before the capture).",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 79489,
+   "x_range_px": [
+    436,
+    665
+   ],
+   "status": "alive (above price, about +3.5%)"
+  },
+  {
+   "price": 78709,
+   "x_range_px": [
+    442,
+    665
+   ],
+   "status": "alive (above price, about +2.5%)"
+  },
+  {
+   "price": 78530,
+   "x_range_px": [
+    604,
+    665
+   ],
+   "status": "alive (above price, about +2.3%)",
+   "note": "short right-edge segment, width 62 px"
+  },
+  {
+   "price": 76218,
+   "x_range_px": [
+    504,
+    665
+   ],
+   "status": "alive (below price, about -0.8%)"
+  },
+  {
+   "price": 77139,
+   "x_range_px": [
+    436,
+    497
+   ],
+   "status": "consumed (price dropped through at x~500)"
+  },
+  {
+   "price": 77017,
+   "x_range_px": [
+    426,
+    497
+   ],
+   "status": "consumed (same drop)"
+  }
+ ],
+ "estimate_at_same_time": {
+  "above": [
+   [
+    78988,
+    0.95
+   ],
+   [
+    78262,
+    0.79
+   ],
+   [
+    79588,
+    0.78
+   ]
+  ],
+  "below": [
+   [
+    75838,
+    1.0
+   ],
+   [
+    76562,
+    0.88
+   ],
+   [
+    75138,
+    0.87
+   ]
+  ],
+  "note": "v1 24h-window estimator, data up to 23:30 UTC"
+ },
+ "event_context": {
+  "tag": "post_event_quiet",
+  "summary": "About 76h after the suspected Binance hot-wallet hack began (2026-10-29 ~20:20 UTC). Declining from 78.8k to 76.7k over the last 15h."
+ },
+ "note": "New independent group G (24h window does not overlap the earlier samples). Location calibration only."
+}

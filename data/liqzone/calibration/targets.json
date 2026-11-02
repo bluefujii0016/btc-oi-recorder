@@ -148,6 +148,20 @@
    "lime": [],
    "tag": "post_event_quiet",
    "note": "Added before any tuning run (tuning set). The 24h window overlaps the 02:54 UTC sample by 17h. Collected data lagged 1h (last bar 08:30 UTC)."
+  },
+  {
+   "id": "20261102_2349",
+   "capture_utc": "2026-11-02 23:49",
+   "group": "G",
+   "alive": [
+    79489,
+    78709,
+    78530,
+    76218
+   ],
+   "lime": [],
+   "tag": "post_event_quiet",
+   "note": "First sample whose 24h window does not overlap any earlier sample (new independent group). Added before any tuning run. 78530 is a short right-edge segment (width 62 px). 77139/77017 (x 426-497) are consumed (price dropped through at x~500)."
   }
  ]
 }
