@@ -1,0 +1,130 @@
+{
+ "summary": {
+  "cv_median": 290.5,
+  "cv_mean": 289.18888888888887,
+  "cv_within200": 0.35555555555555557,
+  "cv_within300": 0.5555555555555556,
+  "baseline_median": 343.5,
+  "placebo_median": 426.99658210111375,
+  "groups_improved": 4,
+  "groups": 7,
+  "crit_vs_placebo": false,
+  "crit_vs_baseline": true,
+  "crit_groups": false,
+  "adopt": false
+ },
+ "cv": [
+  {
+   "held_out": "A",
+   "chosen": {
+    "smooth": 1,
+    "tiers": "equal",
+    "mmr": 0.004,
+    "entry": "close",
+    "halflife_h": 0
+   },
+   "train_median": 210.0,
+   "heldout_median": 112.5,
+   "baseline_median": 399.5,
+   "lines": 7,
+   "improved": true
+  },
+  {
+   "held_out": "B",
+   "chosen": {
+    "smooth": 2,
+    "tiers": "highlev",
+    "mmr": 0.006,
+    "entry": "close",
+    "halflife_h": 0
+   },
+   "train_median": 194.5,
+   "heldout_median": 422.5,
+   "baseline_median": 386.5,
+   "lines": 5,
+   "improved": false
+  },
+  {
+   "held_out": "C",
+   "chosen": {
+    "smooth": 2,
+    "tiers": "highlev",
+    "mmr": 0.006,
+    "entry": "close",
+    "halflife_h": 0
+   },
+   "train_median": 193.5,
+   "heldout_median": 333.5,
+   "baseline_median": 354.0,
+   "lines": 4,
+   "improved": true
+  },
+  {
+   "held_out": "D",
+   "chosen": {
+    "smooth": 1,
+    "tiers": "highlev",
+    "mmr": 0.004,
+    "entry": "close",
+    "halflife_h": 0
+   },
+   "train_median": 222.5,
+   "heldout_median": 195.5,
+   "baseline_median": 189.5,
+   "lines": 9,
+   "improved": false
+  },
+  {
+   "held_out": "E",
+   "chosen": {
+    "smooth": 4,
+    "tiers": "current",
+    "mmr": 0.006,
+    "entry": "close",
+    "halflife_h": 6
+   },
+   "train_median": 208.5,
+   "heldout_median": 277.5,
+   "baseline_median": 346.5,
+   "lines": 6,
+   "improved": true
+  },
+  {
+   "held_out": "F",
+   "chosen": {
+    "smooth": 1,
+    "tiers": "equal",
+    "mmr": 0.006,
+    "entry": "close",
+    "halflife_h": 0
+   },
+   "train_median": 220.5,
+   "heldout_median": 220.5,
+   "baseline_median": 227.0,
+   "lines": 10,
+   "improved": true
+  },
+  {
+   "held_out": "G",
+   "chosen": {
+    "smooth": 1,
+    "tiers": "equal",
+    "mmr": 0.004,
+    "entry": "close",
+    "halflife_h": 0
+   },
+   "train_median": 194.5,
+   "heldout_median": 311.5,
+   "baseline_median": 273.0,
+   "lines": 4,
+   "improved": false
+  }
+ ],
+ "baseline_default": {
+  "smooth": 4,
+  "tiers": "current",
+  "mmr": 0.005,
+  "entry": "typical",
+  "halflife_h": 0
+ }
+}
