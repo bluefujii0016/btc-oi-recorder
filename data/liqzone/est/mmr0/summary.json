@@ -1,0 +1,32 @@
+{
+ "OOS": {
+  "lines": 19,
+  "base_median": 373.5,
+  "mmr0_median": 178.5,
+  "placebo_median": 419.59244408984523,
+  "mmr0_within100": 0.3684210526315789,
+  "mmr0_within200": 0.5263157894736842,
+  "mmr0_within300": 0.6842105263157895,
+  "base_within200": 0.21052631578947367
+ },
+ "explore(参考)": {
+  "lines": 29,
+  "base_median": 278.5,
+  "mmr0_median": 124.5,
+  "placebo_median": 433.3793058512747,
+  "mmr0_within100": 0.3448275862068966,
+  "mmr0_within200": 0.5862068965517241,
+  "mmr0_within300": 0.6896551724137931,
+  "base_within200": 0.3448275862068966
+ },
+ "all": {
+  "lines": 48,
+  "base_median": 344.0,
+  "mmr0_median": 154.5,
+  "placebo_median": 419.5112187554041,
+  "mmr0_within100": 0.3541666666666667,
+  "mmr0_within200": 0.5625,
+  "mmr0_within300": 0.6875,
+  "base_within200": 0.2916666666666667
+ }
+}
