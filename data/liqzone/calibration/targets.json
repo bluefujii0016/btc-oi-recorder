@@ -162,6 +162,18 @@
    "lime": [],
    "tag": "post_event_quiet",
    "note": "First sample whose 24h window does not overlap any earlier sample (new independent group). Added before any tuning run. 78530 is a short right-edge segment (width 62 px). 77139/77017 (x 426-497) are consumed (price dropped through at x~500)."
+  },
+  {
+   "id": "20261103_1034",
+   "capture_utc": "2026-11-03 10:34",
+   "group": "G",
+   "alive": [
+    78586,
+    78052,
+    76219
+   ],
+   "lime": [],
+   "note": "Added after the (not adopted) search; baseline is unchanged -> out-of-sample. Group G overlaps the 11-02 23:49 sample (13h). 77162 is a short left segment (consumed)."
   }
  ]
 }

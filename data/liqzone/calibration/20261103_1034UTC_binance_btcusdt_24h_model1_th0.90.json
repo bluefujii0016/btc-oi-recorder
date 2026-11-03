@@ -1,0 +1,76 @@
+{
+ "captured_jst": "2026-11-03 19:34",
+ "captured_utc": "2026-11-03 10:34",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Pair/Currency + Model row layout (plot starts at y=481).",
+ "price_axis_fit": "price = -8.898 * y_px + 85682.4 (residual < 2.3 USD on 6 labels), read with scripts/liqzone_readimg.py",
+ "price_at_capture_data_close": 76867.9,
+ "time_check": "Data last bar 09:30 UTC (about 1h before the capture; collection lag). Not checked against candles.",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 78586,
+   "x_range_px": [
+    174,
+    669
+   ],
+   "status": "alive (above price)"
+  },
+  {
+   "price": 78052,
+   "x_range_px": [
+    426,
+    669
+   ],
+   "status": "alive (above price)"
+  },
+  {
+   "price": 76219,
+   "x_range_px": [
+    472,
+    669
+   ],
+   "status": "alive (below price)"
+  }
+ ],
+ "lime_consumed": [
+  {
+   "price": 77162,
+   "x_range_px": [
+    162,
+    219
+   ],
+   "status": "consumed/short left segment"
+  }
+ ],
+ "estimate_at_same_time": {
+  "above": [
+   [
+    78062,
+    0.98
+   ],
+   [
+    79588,
+    0.82
+   ],
+   [
+    79012,
+    0.76
+   ]
+  ],
+  "below": [
+   [
+    75738,
+    1.0
+   ],
+   [
+    74212,
+    1.0
+   ],
+   [
+    75138,
+    0.84
+   ]
+  ],
+  "note": "v2 estimator (unchanged baseline), data up to 09:30 UTC"
+ },
+ "note": "Group G (24h window overlaps G's 11-02 23:49 sample by 13h). Added after the 11-03 search (not adopted); baseline parameters unchanged, so this is a clean out-of-sample check of the baseline. Location calibration only."
+}
