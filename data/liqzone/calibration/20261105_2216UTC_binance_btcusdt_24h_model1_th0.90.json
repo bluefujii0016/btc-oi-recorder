@@ -1,0 +1,61 @@
+{
+ "captured_jst": "2026-11-06 07:16",
+ "captured_utc": "2026-11-05 22:16",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Plot starts at y=464.",
+ "price_axis_fit": "price = -12.836 * y_px + 90201.3 (residual up to 11 USD on 6 labels)",
+ "price_at_capture_data_close": 76060.6,
+ "time_check": "Data last bar 2026-11-05 21:30:00 UTC.",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 77218,
+   "status": "alive"
+  },
+  {
+   "price": 75729,
+   "status": "alive"
+  },
+  {
+   "price": 75248,
+   "status": "alive"
+  }
+ ],
+ "lime_lines": [
+  {
+   "price": 77346,
+   "status": "alive, above price"
+  }
+ ],
+ "estimate_at_same_time": {
+  "base": [
+   76060.6,
+   [
+    77138,
+    78662,
+    79212
+   ],
+   [
+    75412,
+    73338,
+    74862
+   ]
+  ],
+  "mmr0": [
+   76060.6,
+   [
+    77512,
+    79038,
+    79612
+   ],
+   [
+    72962,
+    74488,
+    75238
+   ]
+  ]
+ },
+ "event_context": {
+  "tag": "crash_day",
+  "summary": "Price fell about 80.9k -> 75.6k within the window (sharp drop at x~470). Not mixed into normal reaction statistics."
+ },
+ "note": "Group I (24h window overlaps the 11-05 06:34 sample by 8h). Added after mmr=0 freeze -> out-of-sample. Short yellow fragments near x 498-512 (about 76.5k) are very short and not counted."
+}

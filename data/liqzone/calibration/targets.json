@@ -187,6 +187,21 @@
     77524
    ],
    "note": "Added after mmr=0 freeze -> out-of-sample. New independent group (24h window does not overlap earlier samples)."
+  },
+  {
+   "id": "20261105_2216",
+   "capture_utc": "2026-11-05 22:16",
+   "group": "I",
+   "alive": [
+    77218,
+    75729,
+    75248
+   ],
+   "lime": [
+    77346
+   ],
+   "tag": "crash_day",
+   "note": "Added after mmr=0 freeze -> out-of-sample. Crash day (about -6% in the window). Overlaps the 11-05 06:34 sample by 8h."
   }
  ]
 }
