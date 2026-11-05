@@ -1,0 +1,65 @@
+{
+ "captured_jst": "2026-11-05 15:34",
+ "captured_utc": "2026-11-05 06:34",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Plot starts at y=477.",
+ "price_axis_fit": "price = -10.531 * y_px + 89250.4 (residual < 1.5 USD on 6 labels)",
+ "price_at_capture_data_close": 80480.0,
+ "time_check": "Data last bar 2026-11-05 05:30:00 UTC.",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 79915,
+   "x_range_px": [
+    272,
+    669
+   ],
+   "status": "alive (below price)"
+  }
+ ],
+ "lime_lines": [
+  {
+   "price": 81494,
+   "x_range_px": [
+    510,
+    669
+   ],
+   "status": "alive, yellow-green, above price"
+  },
+  {
+   "price": 77524,
+   "x_range_px": [
+    504,
+    669
+   ],
+   "status": "alive, yellow-green, below price"
+  }
+ ],
+ "estimate_at_same_time": {
+  "base": [
+   80480.0,
+   [
+    83438,
+    81812,
+    81012
+   ],
+   [
+    77788,
+    79412,
+    77188
+   ]
+  ],
+  "mmr0": [
+   80480.0,
+   [
+    81488,
+    82238,
+    83838
+   ],
+   [
+    77388,
+    79012,
+    76788
+   ]
+  ]
+ },
+ "note": "New independent group I (24h window starts 11-04 06:34, no overlap with earlier samples). Price jumped about +2% in the window (x~260). Added after mmr=0 was frozen -> clean out-of-sample for the adopted estimator. Only 1 yellow line, so lime lines reported separately."
+}

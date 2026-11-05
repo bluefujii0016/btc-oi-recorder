@@ -174,6 +174,19 @@
    ],
    "lime": [],
    "note": "Added after the (not adopted) search; baseline is unchanged -> out-of-sample. Group G overlaps the 11-02 23:49 sample (13h). 77162 is a short left segment (consumed)."
+  },
+  {
+   "id": "20261105_0634",
+   "capture_utc": "2026-11-05 06:34",
+   "group": "I",
+   "alive": [
+    79915
+   ],
+   "lime": [
+    81494,
+    77524
+   ],
+   "note": "Added after mmr=0 freeze -> out-of-sample. New independent group (24h window does not overlap earlier samples)."
   }
  ]
 }
