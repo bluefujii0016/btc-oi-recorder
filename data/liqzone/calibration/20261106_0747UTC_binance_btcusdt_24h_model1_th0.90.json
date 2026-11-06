@@ -1,0 +1,85 @@
+{
+ "captured_jst": "2026-11-06 16:47",
+ "captured_utc": "2026-11-06 07:47",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Plot starts at y=453.",
+ "price_axis_fit": "price = -13.121 * y_px + 89946.8 (residual 0 on 6 labels)",
+ "price_at_capture_data_close": 75342.0,
+ "time_check": "Data last bar 2026-11-06 07:30:00 UTC.",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 77226,
+   "x_range_px": [
+    256,
+    669
+   ],
+   "status": "alive (above price)"
+  },
+  {
+   "price": 74930,
+   "x_range_px": [
+    612,
+    669
+   ],
+   "status": "alive (below price), short right-edge segment"
+  },
+  {
+   "price": 75691,
+   "x_range_px": [
+    256,
+    431
+   ],
+   "status": "consumed (price dropped through at x~440)"
+  },
+  {
+   "price": 75245,
+   "x_range_px": [
+    286,
+    441
+   ],
+   "status": "consumed (same drop)"
+  }
+ ],
+ "lime_lines": [
+  {
+   "price": 75087,
+   "x_range_px": [
+    252,
+    669
+   ],
+   "status": "alive, yellow-green, below price"
+  }
+ ],
+ "estimate_at_same_time": {
+  "base": [
+   75342.0,
+   [
+    77138,
+    78662,
+    76562
+   ],
+   [
+    74862,
+    73338,
+    72738
+   ]
+  ],
+  "mmr0": [
+   75342.0,
+   [
+    77512,
+    79038,
+    76812
+   ],
+   [
+    74962,
+    72962,
+    74388
+   ]
+  ]
+ },
+ "event_context": {
+  "tag": "crash_day",
+  "summary": "Same crash as the 11-05 22:16 sample; about +9h later. Price 80.6k -> 74.9k within the window, then a rebound and a second dip."
+ },
+ "note": "Group I (window overlaps the 11-05 samples by 14-23h). Added after mmr=0 freeze -> out-of-sample but not independent of the 11-05 22:16 sample."
+}

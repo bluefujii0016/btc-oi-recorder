@@ -202,6 +202,20 @@
    ],
    "tag": "crash_day",
    "note": "Added after mmr=0 freeze -> out-of-sample. Crash day (about -6% in the window). Overlaps the 11-05 06:34 sample by 8h."
+  },
+  {
+   "id": "20261106_0747",
+   "capture_utc": "2026-11-06 07:47",
+   "group": "I",
+   "alive": [
+    77226,
+    74930
+   ],
+   "lime": [
+    75087
+   ],
+   "tag": "crash_day",
+   "note": "After mmr=0 freeze. Same crash window as 11-05 22:16 (overlap 14h). 75691/75245 consumed (price dropped through at x~440). 74930 is a short right-edge segment."
   }
  ]
 }
