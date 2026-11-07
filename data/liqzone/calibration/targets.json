@@ -216,6 +216,25 @@
    ],
    "tag": "crash_day",
    "note": "After mmr=0 freeze. Same crash window as 11-05 22:16 (overlap 14h). 75691/75245 consumed (price dropped through at x~440). 74930 is a short right-edge segment."
+  },
+  {
+   "id": "20261107_1040",
+   "capture_utc": "2026-11-07 10:40",
+   "group": "J",
+   "alive": [
+    76792,
+    76636,
+    76340,
+    75264,
+    75133,
+    74821,
+    74427
+   ],
+   "lime": [
+    77022
+   ],
+   "tag": "range_day",
+   "note": "Independent group J, after mmr=0 freeze. Quiet range day after the crash. 7 yellow lines alive."
   }
  ]
 }

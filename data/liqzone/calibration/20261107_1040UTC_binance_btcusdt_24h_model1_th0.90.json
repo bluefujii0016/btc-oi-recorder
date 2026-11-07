@@ -1,0 +1,97 @@
+{
+ "captured_jst": "2026-11-07 19:40",
+ "captured_utc": "2026-11-07 10:40",
+ "source": "CoinGlass Liq Map, Binance BTCUSDT, 24h, Color 1, Liquidity Threshold 0.90, Model 1 (user screenshot, phone). Plot starts at y=484.",
+ "price_axis_fit": "price = -8.2108 * y_px + 83421.9 (residual < 0.6 USD on 6 labels)",
+ "price_at_capture_data_close": 75959.4,
+ "time_check": "Data last bar 2026-11-07 10:30:00 UTC.",
+ "yellow_lines_read_from_pixels": [
+  {
+   "price": 76792,
+   "status": "alive"
+  },
+  {
+   "price": 76636,
+   "status": "alive"
+  },
+  {
+   "price": 76340,
+   "status": "alive"
+  },
+  {
+   "price": 75264,
+   "status": "alive"
+  },
+  {
+   "price": 75133,
+   "status": "alive"
+  },
+  {
+   "price": 74821,
+   "status": "alive"
+  },
+  {
+   "price": 74427,
+   "status": "alive"
+  }
+ ],
+ "lime_lines": [
+  {
+   "price": 77022,
+   "status": "alive, yellow-green, above price"
+  }
+ ],
+ "estimate_at_same_time": {
+  "base": [
+   75959.4,
+   [
+    77038,
+    78562,
+    76312
+   ],
+   [
+    73238,
+    74762,
+    75588
+   ]
+  ],
+  "mmr0": [
+   75959.4,
+   [
+    78938,
+    77462,
+    76662
+   ],
+   [
+    74388,
+    72862,
+    75188
+   ]
+  ]
+ },
+ "errors_nearest_peak": {
+  "base": [
+   246,
+   324,
+   28,
+   324,
+   370,
+   58,
+   336
+  ],
+  "mmr0": [
+   130,
+   26,
+   322,
+   76,
+   54,
+   366,
+   40
+  ]
+ },
+ "event_context": {
+  "tag": "range_day",
+  "summary": "Quiet range (75.9-76.5k) after the 11-05/06 crash; the crash bounce is at the left of the window (x~150)."
+ },
+ "note": "New independent group J (window 11-06 10:40 - 11-07 10:40; does not overlap the 11-06 07:47 sample). Many yellow lines (7). Short yellow piece at 75954 (x151-191) is consumed/near price and not counted. Added after mmr=0 freeze."
+}
